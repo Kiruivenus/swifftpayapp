@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { recipient_email, amount } = await req.json();
+        const { recipient, recipient_type, amount, currency } = await req.json();
 
         if (amount <= 0) {
             return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
@@ -24,32 +24,45 @@ export async function POST(req: NextRequest) {
 
         // Find sender
         const sender = await User.findById(user.id).session(session);
-        if (!sender || sender.balance < amount) {
-            return NextResponse.json({ message: 'Insufficient balance' }, { status: 400 });
+        if (!sender) {
+            return NextResponse.json({ message: 'Sender not found' }, { status: 404 });
+        }
+
+        // Check balance based on currency
+        const balanceField = currency === 'USDT' ? 'usdtBalance' : 'kesBalance';
+        if (sender[balanceField] < amount) {
+            return NextResponse.json({ message: `Insufficient ${currency} balance` }, { status: 400 });
         }
 
         // Find recipient
-        const recipient = await User.findOne({ email: recipient_email }).session(session);
-        if (!recipient) {
+        let recipientUser;
+        if (recipient_type === 'EMAIL') {
+            recipientUser = await User.findOne({ email: recipient }).session(session);
+        } else {
+            recipientUser = await User.findById(recipient).session(session);
+        }
+
+        if (!recipientUser) {
             return NextResponse.json({ message: 'Recipient not found' }, { status: 404 });
         }
 
-        if (sender.id === recipient.id) {
+        if (sender.id === recipientUser.id) {
             return NextResponse.json({ message: 'Cannot transfer to yourself' }, { status: 400 });
         }
 
         // Update balances
-        sender.balance -= amount;
-        recipient.balance += amount;
+        sender[balanceField] -= amount;
+        recipientUser[balanceField] += amount;
 
         await sender.save();
-        await recipient.save();
+        await recipientUser.save();
 
-        // Create transaction records
+        // Create transaction recording
         await Transaction.create([{
             userId: sender.id,
-            recipientId: recipient.id,
+            recipientId: recipientUser.id,
             amount,
+            currency,
             type: 'TRANSFER_SEND',
             status: 'SUCCESS',
             createdAt: new Date()
