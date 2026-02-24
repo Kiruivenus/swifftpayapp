@@ -14,11 +14,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { amount, rate } = await req.json(); // amount in USDT
+        const { amount, rate, fromCurrency } = await req.json();
 
         if (amount <= 0) {
             return NextResponse.json({ message: 'Amount must be greater than zero' }, { status: 400 });
         }
+
+        const toCurrency = fromCurrency === 'USDT' ? 'KES' : 'USDT';
 
         await dbConnect();
 
@@ -27,36 +29,56 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
 
-        if (dbUser.usdtBalance < amount) {
-            return NextResponse.json({ message: 'Insufficient USDT balance' }, { status: 400 });
+        // Check balance based on direction
+        if (fromCurrency === 'USDT') {
+            if (dbUser.usdtBalance < amount) {
+                return NextResponse.json({ message: 'Insufficient USDT balance' }, { status: 400 });
+            }
+            const kesAmount = amount * rate;
+            dbUser.usdtBalance -= amount;
+            dbUser.kesBalance += kesAmount;
+
+            await dbUser.save();
+
+            await Transaction.create([{
+                userId: user.id,
+                amount: amount,
+                currency: 'USDT',
+                secondaryAmount: kesAmount,
+                secondaryCurrency: 'KES',
+                type: 'CONVERT',
+                status: 'SUCCESS',
+                createdAt: new Date()
+            }], { session });
+
+        } else {
+            if (dbUser.kesBalance < amount) {
+                return NextResponse.json({ message: 'Insufficient KES balance' }, { status: 400 });
+            }
+            const usdtAmount = amount / rate;
+            dbUser.kesBalance -= amount;
+            dbUser.usdtBalance += usdtAmount;
+
+            await dbUser.save();
+
+            await Transaction.create([{
+                userId: user.id,
+                amount: amount,
+                currency: 'KES',
+                secondaryAmount: usdtAmount,
+                secondaryCurrency: 'USDT',
+                type: 'CONVERT',
+                status: 'SUCCESS',
+                createdAt: new Date()
+            }], { session });
         }
-
-        const kesAmount = amount * rate;
-
-        // Update balances
-        dbUser.usdtBalance -= amount;
-        dbUser.kesBalance += kesAmount;
-
-        await dbUser.save();
-
-        // Create conversion transaction
-        await Transaction.create([{
-            userId: user.id,
-            amount: amount,
-            currency: 'USDT',
-            secondaryAmount: kesAmount,
-            secondaryCurrency: 'KES',
-            type: 'CONVERT',
-            status: 'SUCCESS',
-            createdAt: new Date()
-        }], { session });
 
         await session.commitTransaction();
         return NextResponse.json({
             message: 'Conversion successful',
-            usdtAmount: amount,
-            kesAmount: kesAmount,
-            rate: rate
+            fromCurrency,
+            toCurrency,
+            amount
         });
 
     } catch (error: any) {

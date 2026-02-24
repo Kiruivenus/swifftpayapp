@@ -34,6 +34,11 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    usdtAddress: {
+        type: String,
+        unique: true,
+        sparse: true,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
