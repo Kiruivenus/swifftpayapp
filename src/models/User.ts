@@ -8,7 +8,11 @@ const UserSchema = new Schema({
     },
     username: String,
     phoneNumber: String,
-    balance: {
+    kesBalance: {
+        type: Number,
+        default: 0,
+    },
+    usdtBalance: {
         type: Number,
         default: 0,
     },
@@ -20,6 +24,15 @@ const UserSchema = new Schema({
     password: {
         type: String,
         required: true,
+    },
+    pinHash: String,
+    isPinSet: {
+        type: Boolean,
+        default: false,
+    },
+    biometricEnabled: {
+        type: Boolean,
+        default: false,
     },
     createdAt: {
         type: Date,

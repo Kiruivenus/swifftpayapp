@@ -25,7 +25,8 @@ export async function POST(request: Request) {
             phoneNumber: phone,
             password: hashedPassword,
             role: 'USER',
-            balance: 0
+            kesBalance: 0,
+            usdtBalance: 0
         });
 
         // Create token

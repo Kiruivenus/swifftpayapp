@@ -3,26 +3,26 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { verifyAuth } from '@/lib/auth';
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
+        const { username, phone } = await req.json();
         await dbConnect();
-        const dbUser = await User.findById(user.id).select('username email phoneNumber isPinSet biometricEnabled');
-        if (!dbUser) {
-            return NextResponse.json({ message: 'User not found' }, { status: 404 });
-        }
+
+        const updateData: any = {};
+        if (username) updateData.username = username;
+        if (phone) updateData.phoneNumber = phone;
+
+        const updatedUser = await User.findByIdAndUpdate(user.id, updateData, { new: true });
 
         return NextResponse.json({
-            id: dbUser._id,
-            username: dbUser.username,
-            email: dbUser.email,
-            phone: dbUser.phoneNumber,
-            isPinSet: dbUser.isPinSet || false,
-            biometricEnabled: dbUser.biometricEnabled || false
+            message: 'Profile updated successfully',
+            username: updatedUser.username,
+            phone: updatedUser.phoneNumber
         });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });

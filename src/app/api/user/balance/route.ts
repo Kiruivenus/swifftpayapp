@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json({
-            balance: dbUser.balance,
+            kesBalance: dbUser.kesBalance,
+            usdtBalance: dbUser.usdtBalance,
+            totalBalanceKES: dbUser.kesBalance + (dbUser.usdtBalance * 128.5), // Fixed rate for now
             currency: 'KES'
         });
     } catch (error: any) {

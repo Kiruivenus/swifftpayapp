@@ -24,10 +24,13 @@ export async function GET(req: NextRequest) {
         const mappedTransactions = transactions.map(tx => ({
             id: tx._id,
             amount: tx.amount,
-            type: tx.type === 'DEPOSIT' || (tx.type === 'TRANSFER_RECEIVE' && tx.recipientId === user.id) ? 'RECEIVE' : 'SEND',
+            currency: tx.currency,
+            secondaryAmount: tx.secondaryAmount,
+            secondaryCurrency: tx.secondaryCurrency,
+            type: tx.type,
             status: tx.status,
             date: new Date(tx.createdAt).toLocaleDateString(),
-            recipient: tx.recipientId, // You might want to populate this with usernames later
+            recipient: tx.recipientId,
             sender: tx.userId
         }));
 
