@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import { verifyAuth } from '@/lib/auth';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
     const session = await mongoose.startSession();
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { recipient, recipient_type, amount, currency } = await req.json();
+        const { recipient, recipient_type, amount, currency, pin } = await req.json();
 
         if (amount <= 0) {
             return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
@@ -26,6 +27,17 @@ export async function POST(req: NextRequest) {
         const sender = await User.findById(user.id).session(session);
         if (!sender) {
             return NextResponse.json({ message: 'Sender not found' }, { status: 404 });
+        }
+
+        // Verify PIN if set
+        if (sender.isPinSet) {
+            if (!pin) {
+                return NextResponse.json({ message: 'PIN required for this transaction' }, { status: 403 });
+            }
+            const isPinValid = await bcrypt.compare(pin, sender.pinHash);
+            if (!isPinValid) {
+                return NextResponse.json({ message: 'Invalid transaction PIN' }, { status: 403 });
+            }
         }
 
         // Check balance based on currency
