@@ -12,13 +12,11 @@ export async function GET(req: NextRequest) {
 
         await dbConnect();
 
-        // Find transactions where user is either the sender (userId) or recipient (recipientId for transfers)
-        const transactions = await Transaction.find({
-            $or: [
-                { userId: user.id },
-                { recipientId: user.id }
-            ]
-        }).sort({ createdAt: -1 }).limit(20);
+        // With double-recording, we only need to fetch transactions where the user is the 'owner' (userId)
+        // This ensures the 'type' (TRANSFER_SEND vs TRANSFER_RECEIVE) is correct for the specific user.
+        const transactions = await Transaction.find({ userId: user.id })
+            .sort({ createdAt: -1 })
+            .limit(40);
 
         // Map to the format expected by the Android app
         const mappedTransactions = transactions.map(tx => ({
@@ -31,7 +29,14 @@ export async function GET(req: NextRequest) {
             status: tx.status,
             date: new Date(tx.createdAt).toLocaleDateString(),
             recipient: tx.recipientId,
-            sender: tx.userId
+            recipientId: tx.recipientId, // Pass numeric/raw ID as well
+            senderId: tx.senderId,
+            sender: tx.senderId || tx.userId, // Default to userId for older single-record entries
+            network: tx.network,
+            toAddress: tx.toAddress,
+            fee: tx.fee,
+            netAmount: tx.netAmount,
+            phoneNumber: tx.phoneNumber
         }));
 
         return NextResponse.json(mappedTransactions);

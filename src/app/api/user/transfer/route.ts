@@ -78,16 +78,29 @@ export async function POST(req: NextRequest) {
         await sender.save();
         await recipientUser.save();
 
-        // Create transaction recording
-        await Transaction.create([{
-            userId: sender.id,
-            recipientId: recipientUser.id,
-            amount,
-            currency,
-            type: 'TRANSFER_SEND',
-            status: 'SUCCESS',
-            createdAt: new Date()
-        }], { session });
+        // Create TWO transaction records: one for sender, one for recipient
+        await Transaction.create([
+            {
+                userId: sender.id, // Record for the sender
+                senderId: sender.id,
+                recipientId: recipientUser.id,
+                amount,
+                currency,
+                type: 'TRANSFER_SEND',
+                status: 'SUCCESS',
+                createdAt: new Date()
+            },
+            {
+                userId: recipientUser.id, // Record for the recipient
+                senderId: sender.id,
+                recipientId: recipientUser.id,
+                amount,
+                currency,
+                type: 'TRANSFER_RECEIVE',
+                status: 'SUCCESS',
+                createdAt: new Date()
+            }
+        ], { session });
 
         await session.commitTransaction();
         return NextResponse.json({ message: 'Transfer successful' });
