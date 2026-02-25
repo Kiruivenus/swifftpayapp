@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import { verifyAuth } from '@/lib/auth';
 import mongoose from 'mongoose';
+import { sendPushNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     const session = await mongoose.startSession();
@@ -74,6 +75,17 @@ export async function POST(req: NextRequest) {
         }
 
         await session.commitTransaction();
+
+        // Trigger Notification (Async)
+        const toCurrency = fromCurrency === 'USDT' ? 'KES' : 'USDT';
+        const displayRate = fromCurrency === 'USDT' ? rate : (1 / rate).toFixed(4);
+        sendPushNotification(
+            user.id,
+            "Transaction Alert",
+            `Converted ${amount} ${fromCurrency} to ${toCurrency}`,
+            'transactions'
+        );
+
         return NextResponse.json({
             message: 'Conversion successful',
             fromCurrency,

@@ -63,7 +63,9 @@ export async function POST(req: Request) {
             await Transaction.create({
                 userId,
                 amount,
+                currency: 'KES',
                 type: 'DEPOSIT',
+                method: 'MPESA',
                 status: 'PENDING',
                 phoneNumber,
                 checkoutRequestID: stkResponse.data.CheckoutRequestID,

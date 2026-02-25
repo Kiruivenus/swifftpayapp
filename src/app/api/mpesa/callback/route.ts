@@ -31,9 +31,9 @@ export async function POST(req: Request) {
             );
 
             if (transaction) {
-                // Update User Balance
+                // Update User Balance - specific to kesBalance
                 await User.findByIdAndUpdate(transaction.userId, {
-                    $inc: { balance: amount }
+                    $inc: { kesBalance: amount }
                 });
             }
 

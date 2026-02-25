@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { verifyAuth } from '@/lib/auth';
+import { sendPushNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     try {
@@ -42,6 +43,14 @@ export async function POST(req: NextRequest) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         dbUser.password = hashedPassword;
         await dbUser.save();
+
+        // Trigger Notification (Async)
+        sendPushNotification(
+            user.id,
+            "Security Alert",
+            "Your account password has been successfully changed.",
+            'security'
+        );
 
         return NextResponse.json({ message: 'Password updated successfully' });
 

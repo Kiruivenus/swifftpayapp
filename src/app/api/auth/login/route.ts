@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
+import { sendPushNotification } from '@/lib/notifications';
 
 export async function POST(request: Request) {
     try {
@@ -49,6 +50,17 @@ export async function POST(request: Request) {
             { id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: '1d' }
+        );
+
+        { expiresIn: '1d' }
+        );
+
+        // Trigger Notification (Async)
+        sendPushNotification(
+            user._id.toString(),
+            "Security Alert",
+            "A new login was detected on your account.",
+            'security'
         );
 
         return NextResponse.json({
