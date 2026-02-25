@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
                     status: 'SUCCESS',
                     createdAt: new Date()
                 }
-            ], { session });
+            ], { session, ordered: true });
 
             await session.commitTransaction();
 

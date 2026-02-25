@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         }
 
         await dbConnect();
-        const dbUser = await User.findById(user.id).select('username email phoneNumber isPinSet biometricEnabled');
+        const dbUser = await User.findById(user.id).select('username fullName email phoneNumber dob isPinSet biometricEnabled');
         if (!dbUser) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
@@ -19,8 +19,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             id: dbUser._id,
             username: dbUser.username,
+            fullName: dbUser.fullName,
             email: dbUser.email,
             phone: dbUser.phoneNumber,
+            dob: dbUser.dob ? dbUser.dob.toISOString().split('T')[0] : null,
             isPinSet: dbUser.isPinSet || false,
             biometricEnabled: dbUser.biometricEnabled || false
         });

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
             dbUser.usdtBalance -= amount;
             dbUser.kesBalance += kesAmount;
 
-            await dbUser.save();
+            await dbUser.save({ session });
 
             await Transaction.create([{
                 userId: user.id,
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
                 type: 'CONVERT',
                 status: 'SUCCESS',
                 createdAt: new Date()
-            }], { session });
+            }], { session, ordered: true });
 
         } else {
             if (dbUser.kesBalance < amount) {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
             dbUser.kesBalance -= amount;
             dbUser.usdtBalance += usdtAmount;
 
-            await dbUser.save();
+            await dbUser.save({ session });
 
             await Transaction.create([{
                 userId: user.id,
@@ -71,13 +71,12 @@ export async function POST(req: NextRequest) {
                 type: 'CONVERT',
                 status: 'SUCCESS',
                 createdAt: new Date()
-            }], { session });
+            }], { session, ordered: true });
         }
 
         await session.commitTransaction();
 
         // Trigger Notification (Async)
-        const toCurrency = fromCurrency === 'USDT' ? 'KES' : 'USDT';
         const displayRate = fromCurrency === 'USDT' ? rate : (1 / rate).toFixed(4);
         sendPushNotification(
             user.id,

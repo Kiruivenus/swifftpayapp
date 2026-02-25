@@ -7,7 +7,9 @@ const UserSchema = new Schema({
         unique: true,
     },
     username: String,
+    fullName: String,
     phoneNumber: String,
+    dob: Date,
     kesBalance: {
         type: Number,
         default: 0,

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 
 export async function GET(req: NextRequest) {
     try {
-        await connectDB();
         const authUser = await verifyAuth(req);
         if (!authUser) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
+        await dbConnect();
         const user = await User.findById(authUser.id).select('notificationPrefs');
         if (!user) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
@@ -29,12 +29,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        await connectDB();
         const authUser = await verifyAuth(req);
         if (!authUser) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
+        await dbConnect();
         const prefs = await req.json();
 
         await User.findByIdAndUpdate(authUser.id, {
