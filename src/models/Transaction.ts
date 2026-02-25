@@ -22,7 +22,7 @@ const TransactionSchema = new Schema({
     },
     type: {
         type: String,
-        enum: ['DEPOSIT', 'TRANSFER_SEND', 'TRANSFER_RECEIVE', 'CONVERT'],
+        enum: ['DEPOSIT', 'TRANSFER_SEND', 'TRANSFER_RECEIVE', 'CONVERT', 'WITHDRAW'],
         required: true,
     },
     status: {
@@ -37,6 +37,10 @@ const TransactionSchema = new Schema({
         index: true,
     },
     recipientId: String,
+    toAddress: String, // For on-chain withdrawals
+    network: String, // e.g., 'TRC20'
+    fee: Number,
+    netAmount: Number,
     createdAt: {
         type: Date,
         default: Date.now,
