@@ -34,11 +34,20 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false,
+    },
     usdtAddress: {
         type: String,
         unique: true,
         sparse: true,
     },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    deletedAt: Date,
     createdAt: {
         type: Date,
         default: Date.now,

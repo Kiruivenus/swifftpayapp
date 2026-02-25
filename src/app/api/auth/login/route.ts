@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Otp from '@/models/Otp';
 
 export async function POST(request: Request) {
     try {
@@ -19,6 +20,28 @@ export async function POST(request: Request) {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+        }
+
+        // Check 2FA
+        if (user.twoFactorEnabled) {
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+            await Otp.create({
+                identifier: user.email,
+                code,
+                type: '2FA_LOGIN',
+                expiresAt
+            });
+
+            // MOCK EMAIL SEND
+            console.log(`[2FA LOGIN OTP] To: ${user.email}, Code: ${code}`);
+
+            return NextResponse.json({
+                status: '2FA_REQUIRED',
+                email: user.email,
+                message: 'Two-factor authentication required'
+            });
         }
 
         // Create token

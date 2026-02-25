@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import BlockedUser from '@/models/BlockedUser';
 
 export async function POST(request: Request) {
     try {
@@ -13,6 +14,14 @@ export async function POST(request: Request) {
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return NextResponse.json({ message: 'User already exists' }, { status: 400 });
+        }
+
+        // Check if identifier is blocked (from deleted account)
+        const isBlocked = await BlockedUser.findOne({
+            $or: [{ email }, { phone }]
+        });
+        if (isBlocked) {
+            return NextResponse.json({ message: 'This email or phone number cannot be used to register again.' }, { status: 403 });
         }
 
         // Hash password
