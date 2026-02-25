@@ -11,7 +11,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { name, phoneNumber, amount, currency, network, toAddress } = await req.json();
+        const body = await req.json();
+        const { name, phoneNumber, amount, network, toAddress } = body;
+        const currency = body.currency || 'KES';
 
         if (!amount || amount <= 0) {
             return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });

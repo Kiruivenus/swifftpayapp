@@ -40,10 +40,19 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Check balance based on currency
+        // Calculate pending withdrawals for the specific currency
+        const pendingWithdrawals = await Transaction.aggregate([
+            { $match: { userId: user.id, type: 'WITHDRAW', currency: currency, status: 'PENDING' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const pendingAmount = pendingWithdrawals.length > 0 ? pendingWithdrawals[0].total : 0;
+
+        // Check availability
         const balanceField = currency === 'USDT' ? 'usdtBalance' : 'kesBalance';
-        if (sender[balanceField] < amount) {
-            return NextResponse.json({ message: `Insufficient ${currency} balance` }, { status: 400 });
+        const availableBalance = sender[balanceField] - pendingAmount;
+
+        if (availableBalance < amount) {
+            return NextResponse.json({ message: `Insufficient available ${currency} balance (Pending withdrawals: ${pendingAmount})` }, { status: 400 });
         }
 
         // Find recipient
