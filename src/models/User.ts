@@ -60,6 +60,15 @@ const UserSchema = new Schema({
         type: Date,
         default: Date.now,
     },
+    emailVerified: {
+        type: Boolean,
+        default: false,
+    },
+    status: {
+        type: String,
+        enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BLOCKED'],
+        default: 'PENDING_VERIFICATION',
+    },
 });
 
 const User = models.User || model('User', UserSchema);

@@ -28,11 +28,9 @@ export async function POST(req: NextRequest) {
             }
 
             const resetCode = generateCode();
-            const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-            // Delete old reset OTPs for this user
             await Otp.deleteMany({ identifier: user.email, type: 'PIN_RESET' });
-
             await Otp.create({
                 identifier: user.email,
                 code: resetCode,
@@ -40,15 +38,19 @@ export async function POST(req: NextRequest) {
                 expiresAt
             });
 
-            // MOCK EMAIL SEND
-            console.log(`[PIN RESET OTP] To: ${user.email}, Code: ${resetCode}`);
+            const { sendEmail } = await import('@/lib/email');
+            await sendEmail({
+                to: user.email,
+                subject: 'Your PIN Reset Code',
+                body: `Use this code to reset your transaction PIN: ${resetCode}. It expires in 10 minutes.`
+            });
 
-            return NextResponse.json({ message: 'Reset code sent to your email' });
+            return NextResponse.json({ message: 'Reset code sent' });
         }
 
         if (action === 'verify') {
-            if (!code || !newPin || newPin.length < 4) {
-                return NextResponse.json({ message: 'Missing fields or invalid PIN' }, { status: 400 });
+            if (!code) {
+                return NextResponse.json({ message: 'Verification code required' }, { status: 400 });
             }
 
             const otpRecord = await Otp.findOne({
@@ -62,11 +64,31 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ message: 'Invalid or expired code' }, { status: 401 });
             }
 
+            // OTP is valid. Return success. The client will then call 'complete' with the same code as a token.
+            return NextResponse.json({ message: 'Code verified', success: true });
+        }
+
+        if (action === 'complete') {
+            if (!code || !newPin || newPin.length < 4) {
+                return NextResponse.json({ message: 'Missing fields or invalid PIN' }, { status: 400 });
+            }
+
+            // Verify the code still exists and hasn't expired (acts as the reset token)
+            const otpRecord = await Otp.findOne({
+                identifier: user.email,
+                code,
+                type: 'PIN_RESET',
+                expiresAt: { $gt: new Date() }
+            });
+
+            if (!otpRecord) {
+                return NextResponse.json({ message: 'Session expired. Please restart reset flow.' }, { status: 401 });
+            }
+
             const pinHash = await bcrypt.hash(newPin, 10);
             await User.findByIdAndUpdate(user.id, { pinHash, isPinSet: true });
 
-            // Delete the OTP after use
-            await Otp.deleteOne({ _id: otpRecord._id });
+            await Otp.deleteMany({ identifier: user.email, type: 'PIN_RESET' });
 
             return NextResponse.json({ message: 'PIN reset successfully' });
         }

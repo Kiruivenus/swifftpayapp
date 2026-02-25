@@ -17,19 +17,19 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
 
-        // Calculate pending withdrawals for KES
-        const pendingWithdrawalsKES = await Transaction.aggregate([
-            { $match: { userId: user.id, type: 'WITHDRAW', currency: 'KES', status: 'PENDING' } },
+        // Calculate pending amounts for KES (all pending outgoing transactions)
+        const pendingKES = await Transaction.aggregate([
+            { $match: { userId: user.id, currency: 'KES', status: 'PENDING' } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
-        const pendingAmountKES = pendingWithdrawalsKES.length > 0 ? pendingWithdrawalsKES[0].total : 0;
+        const pendingAmountKES = pendingKES.length > 0 ? pendingKES[0].total : 0;
 
-        // Calculate pending withdrawals for USDT
-        const pendingWithdrawalsUSDT = await Transaction.aggregate([
-            { $match: { userId: user.id, type: 'WITHDRAW', currency: 'USDT', status: 'PENDING' } },
+        // Calculate pending amounts for USDT (all pending outgoing transactions)
+        const pendingUSDT = await Transaction.aggregate([
+            { $match: { userId: user.id, currency: 'USDT', status: 'PENDING' } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
-        const pendingAmountUSDT = pendingWithdrawalsUSDT.length > 0 ? pendingWithdrawalsUSDT[0].total : 0;
+        const pendingAmountUSDT = pendingUSDT.length > 0 ? pendingUSDT[0].total : 0;
 
         return NextResponse.json({
             kesBalance: dbUser.kesBalance,

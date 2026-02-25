@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import BlockedUser from '@/models/BlockedUser';
+import Otp from '@/models/Otp';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
     try {
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user
+        // Create new user (PENDING_VERIFICATION by default from schema)
         const newUser = await User.create({
             username,
             email,
@@ -35,20 +36,33 @@ export async function POST(request: Request) {
             password: hashedPassword,
             role: 'USER',
             kesBalance: 0,
-            usdtBalance: 0
+            usdtBalance: 0,
+            status: 'PENDING_VERIFICATION',
+            emailVerified: false
         });
 
-        // Create token
-        const token = jwt.sign(
-            { id: newUser._id, email: newUser.email, role: newUser.role },
-            process.env.JWT_SECRET || 'fallback_secret',
-            { expiresIn: '1d' }
-        );
+        // Generate Verification OTP
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await Otp.create({
+            identifier: email,
+            code,
+            type: '2FA_LOGIN', // Reusing OTP type or we could add 'EMAIL_VERIFICATION' if needed, but the requirements just say 6-digit code
+            expiresAt
+        });
+
+        // Send Email
+        await sendEmail({
+            to: email,
+            subject: 'Verify your email - SwiftPay',
+            body: `Your verification code is: ${code}. It expires in 10 minutes.`
+        });
 
         return NextResponse.json({
-            token,
-            role: newUser.role,
-            username: newUser.username
+            message: 'Registration successful. Please verify your email.',
+            email: newUser.email,
+            status: 'PENDING_VERIFICATION'
         });
 
     } catch (error: any) {

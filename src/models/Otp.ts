@@ -1,4 +1,5 @@
 import mongoose, { Schema, model, models } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const OtpSchema = new Schema({
     identifier: { // email or phone
@@ -12,7 +13,7 @@ const OtpSchema = new Schema({
     },
     type: {
         type: String,
-        enum: ['2FA_ENABLE', '2FA_LOGIN', 'PASSWORD_RESET'],
+        enum: ['2FA_ENABLE', '2FA_LOGIN', 'PASSWORD_RESET', 'PIN_RESET'],
         required: true,
     },
     expiresAt: {
@@ -24,6 +25,13 @@ const OtpSchema = new Schema({
         default: Date.now,
         expires: 600, // Document expires in 10 minutes
     },
+});
+
+OtpSchema.pre('save', async function (next) {
+    if (this.isModified('code')) {
+        this.code = await bcrypt.hash(this.code, 10);
+    }
+    next();
 });
 
 const Otp = models.Otp || model('Otp', OtpSchema);

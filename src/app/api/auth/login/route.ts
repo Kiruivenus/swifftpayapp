@@ -23,6 +23,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
 
+        // Check Email Verification
+        if (!user.emailVerified) {
+            return NextResponse.json({
+                status: 'EMAIL_UNVERIFIED',
+                email: user.email,
+                message: 'Please verify your email to continue.'
+            }, { status: 403 });
+        }
+
         // Check 2FA
         if (user.twoFactorEnabled) {
             const code = Math.floor(100000 + Math.random() * 900000).toString();

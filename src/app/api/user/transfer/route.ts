@@ -88,15 +88,18 @@ export async function POST(req: NextRequest) {
             await recipientUser.save({ session });
 
             // Create TWO transaction records: one for sender, one for recipient
-            // Explicitly convert IDs to strings for the userId/senderId/recipientId fields
+            const senderName = sender.fullName || sender.username || sender.email;
+            const recipientName = recipientUser.fullName || recipientUser.username || recipientUser.email;
             const senderIdStr = sender._id.toString();
             const recipientIdStr = recipientUser._id.toString();
 
             await Transaction.create([
                 {
-                    userId: senderIdStr, // Owner of this record
+                    userId: senderIdStr,
                     senderId: senderIdStr,
+                    sender: senderName,
                     recipientId: recipientIdStr,
+                    recipient: recipientName,
                     amount: Number(amount),
                     currency,
                     type: 'TRANSFER_SEND',
@@ -104,9 +107,11 @@ export async function POST(req: NextRequest) {
                     createdAt: new Date()
                 },
                 {
-                    userId: recipientIdStr, // Owner of this record
+                    userId: recipientIdStr,
                     senderId: senderIdStr,
+                    sender: senderName,
                     recipientId: recipientIdStr,
+                    recipient: recipientName,
                     amount: Number(amount),
                     currency,
                     type: 'TRANSFER_RECEIVE',

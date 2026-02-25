@@ -11,8 +11,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { action, pin, enabled } = await req.json();
+        const body = await req.json();
+        const { action, pin, enabled, oldPin, newPin } = body;
         await dbConnect();
+
+        if (action === 'verify-pin') {
+            if (!pin) {
+                return NextResponse.json({ message: 'PIN required' }, { status: 400 });
+            }
+            const dbUser = await User.findById(user.id);
+            if (!dbUser || !dbUser.pinHash) {
+                return NextResponse.json({ message: 'PIN not set' }, { status: 404 });
+            }
+            const isMatch = await bcrypt.compare(pin, dbUser.pinHash);
+            if (!isMatch) {
+                return NextResponse.json({ message: 'Incorrect PIN' }, { status: 401 });
+            }
+            return NextResponse.json({ message: 'PIN verified' });
+        }
 
         if (action === 'set-pin') {
             if (!pin || pin.length < 4) {
@@ -24,7 +40,6 @@ export async function POST(req: NextRequest) {
         }
 
         if (action === 'change-pin') {
-            const { oldPin, newPin } = await req.json();
             if (!oldPin || !newPin || newPin.length < 4) {
                 return NextResponse.json({ message: 'Invalid PIN data' }, { status: 400 });
             }
