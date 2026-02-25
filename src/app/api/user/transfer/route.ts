@@ -7,9 +7,9 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
+        await dbConnect();
+
         const user = await verifyAuth(req);
         if (!user) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -17,98 +17,118 @@ export async function POST(req: NextRequest) {
 
         const { recipient, recipient_type, amount, currency, pin } = await req.json();
 
-        if (amount <= 0) {
+        if (!amount || amount <= 0) {
             return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
         }
 
-        await dbConnect();
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        // Find sender
-        const sender = await User.findById(user.id).session(session);
-        if (!sender) {
-            return NextResponse.json({ message: 'Sender not found' }, { status: 404 });
-        }
-
-        // Verify PIN if set
-        if (sender.isPinSet) {
-            if (!pin) {
-                return NextResponse.json({ message: 'PIN required for this transaction' }, { status: 403 });
+        try {
+            // Find sender
+            const sender = await User.findById(user.id).session(session);
+            if (!sender) {
+                await session.abortTransaction();
+                return NextResponse.json({ message: 'Sender not found' }, { status: 404 });
             }
-            const isPinValid = await bcrypt.compare(pin, sender.pinHash);
-            if (!isPinValid) {
-                return NextResponse.json({ message: 'Invalid transaction PIN' }, { status: 403 });
+
+            // Verify PIN if set
+            if (sender.isPinSet) {
+                if (!pin) {
+                    await session.abortTransaction();
+                    return NextResponse.json({ message: 'PIN required for this transaction' }, { status: 403 });
+                }
+                const isPinValid = await bcrypt.compare(pin, sender.pinHash);
+                if (!isPinValid) {
+                    await session.abortTransaction();
+                    return NextResponse.json({ message: 'Invalid transaction PIN' }, { status: 403 });
+                }
             }
-        }
 
-        // Calculate pending withdrawals for the specific currency
-        const pendingWithdrawals = await Transaction.aggregate([
-            { $match: { userId: user.id, type: 'WITHDRAW', currency: currency, status: 'PENDING' } },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]);
-        const pendingAmount = pendingWithdrawals.length > 0 ? pendingWithdrawals[0].total : 0;
+            // Calculate pending withdrawals for the specific currency
+            const aggregated = await Transaction.aggregate([
+                { $match: { userId: user.id, type: 'WITHDRAW', currency: currency, status: 'PENDING' } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]).session(session);
+            const pendingAmount = aggregated.length > 0 ? aggregated[0].total : 0;
 
-        // Check availability
-        const balanceField = currency === 'USDT' ? 'usdtBalance' : 'kesBalance';
-        const availableBalance = sender[balanceField] - pendingAmount;
+            // Check availability
+            const balanceField = currency === 'USDT' ? 'usdtBalance' : 'kesBalance';
+            const availableBalance = sender[balanceField] - pendingAmount;
 
-        if (availableBalance < amount) {
-            return NextResponse.json({ message: `Insufficient available ${currency} balance (Pending withdrawals: ${pendingAmount})` }, { status: 400 });
-        }
-
-        // Find recipient
-        let recipientUser;
-        if (recipient_type === 'EMAIL') {
-            recipientUser = await User.findOne({ email: recipient }).session(session);
-        } else {
-            recipientUser = await User.findById(recipient).session(session);
-        }
-
-        if (!recipientUser) {
-            return NextResponse.json({ message: 'Recipient not found' }, { status: 404 });
-        }
-
-        if (sender.id === recipientUser.id) {
-            return NextResponse.json({ message: 'Cannot transfer to yourself' }, { status: 400 });
-        }
-
-        // Update balances
-        sender[balanceField] -= amount;
-        recipientUser[balanceField] += amount;
-
-        await sender.save();
-        await recipientUser.save();
-
-        // Create TWO transaction records: one for sender, one for recipient
-        await Transaction.create([
-            {
-                userId: sender.id, // Record for the sender
-                senderId: sender.id,
-                recipientId: recipientUser.id,
-                amount,
-                currency,
-                type: 'TRANSFER_SEND',
-                status: 'SUCCESS',
-                createdAt: new Date()
-            },
-            {
-                userId: recipientUser.id, // Record for the recipient
-                senderId: sender.id,
-                recipientId: recipientUser.id,
-                amount,
-                currency,
-                type: 'TRANSFER_RECEIVE',
-                status: 'SUCCESS',
-                createdAt: new Date()
+            if (availableBalance < amount) {
+                await session.abortTransaction();
+                return NextResponse.json({ message: `Insufficient available ${currency} balance. Available: ${availableBalance}` }, { status: 400 });
             }
-        ], { session });
 
-        await session.commitTransaction();
-        return NextResponse.json({ message: 'Transfer successful' });
+            // Find recipient
+            let recipientUser;
+            if (recipient_type === 'EMAIL') {
+                recipientUser = await User.findOne({ email: recipient }).session(session);
+            } else {
+                recipientUser = await User.findById(recipient).session(session);
+            }
+
+            if (!recipientUser) {
+                await session.abortTransaction();
+                return NextResponse.json({ message: 'Recipient not found' }, { status: 404 });
+            }
+
+            if (sender._id.toString() === recipientUser._id.toString()) {
+                await session.abortTransaction();
+                return NextResponse.json({ message: 'Cannot transfer to yourself' }, { status: 400 });
+            }
+
+            // Update balances
+            sender[balanceField] -= Number(amount);
+            recipientUser[balanceField] += Number(amount);
+
+            await sender.save({ session });
+            await recipientUser.save({ session });
+
+            // Create TWO transaction records: one for sender, one for recipient
+            // Explicitly convert IDs to strings for the userId/senderId/recipientId fields
+            const senderIdStr = sender._id.toString();
+            const recipientIdStr = recipientUser._id.toString();
+
+            await Transaction.create([
+                {
+                    userId: senderIdStr, // Owner of this record
+                    senderId: senderIdStr,
+                    recipientId: recipientIdStr,
+                    amount: Number(amount),
+                    currency,
+                    type: 'TRANSFER_SEND',
+                    status: 'SUCCESS',
+                    createdAt: new Date()
+                },
+                {
+                    userId: recipientIdStr, // Owner of this record
+                    senderId: senderIdStr,
+                    recipientId: recipientIdStr,
+                    amount: Number(amount),
+                    currency,
+                    type: 'TRANSFER_RECEIVE',
+                    status: 'SUCCESS',
+                    createdAt: new Date()
+                }
+            ], { session });
+
+            await session.commitTransaction();
+            return NextResponse.json({ message: 'Transfer successful' });
+
+        } catch (error: any) {
+            if (session.inTransaction()) {
+                await session.abortTransaction();
+            }
+            console.error('Transfer Transaction Error:', error);
+            return NextResponse.json({ message: error.message || 'Transaction failed' }, { status: 500 });
+        } finally {
+            session.endSession();
+        }
 
     } catch (error: any) {
-        await session.abortTransaction();
-        return NextResponse.json({ message: error.message }, { status: 500 });
-    } finally {
-        session.endSession();
+        console.error('Transfer API Outer Error:', error);
+        return NextResponse.json({ message: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
