@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Otp from '@/models/Otp';
 import bcrypt from 'bcryptjs';

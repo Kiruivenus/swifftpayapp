@@ -27,11 +27,10 @@ const OtpSchema = new Schema({
     },
 });
 
-OtpSchema.pre('save', async function (next) {
+OtpSchema.pre('save', async function () {
     if (this.isModified('code')) {
         this.code = await bcrypt.hash(this.code, 10);
     }
-    next();
 });
 
 const Otp = models.Otp || model('Otp', OtpSchema);

@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         await user.save();
 
         // Delete the OTP
-        await Otp.deleteOne({ _id: otp._id });
+        await Otp.deleteOne({ _id: validOtp._id });
 
         // Generate token for auto-login
         const token = jwt.sign(
