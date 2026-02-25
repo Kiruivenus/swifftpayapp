@@ -49,10 +49,6 @@ export async function POST(request: Request) {
         const token = jwt.sign(
             { id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'fallback_secret',
-            { expiresIn: '1d' }
-        );
-
-        { expiresIn: '1d' }
         );
 
         // Trigger Notification (Async)
