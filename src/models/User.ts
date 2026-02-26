@@ -69,6 +69,38 @@ const UserSchema = new Schema({
         enum: ['PENDING_VERIFICATION', 'ACTIVE', 'BLOCKED'],
         default: 'PENDING_VERIFICATION',
     },
+    emailNormalized: {
+        type: String,
+        unique: true,
+        required: true,
+        lowercase: true,
+        trim: true,
+    },
+    usernameNormalized: {
+        type: String,
+        unique: true,
+        required: true,
+        lowercase: true,
+        trim: true,
+    },
+    phoneE164: {
+        type: String,
+        unique: true,
+        required: true,
+    },
+    countryCode: String,
+    currency: String,
+});
+
+// Pre-validation hook to ensure normalized fields are populated
+UserSchema.pre('validate', function (next) {
+    if (this.email) {
+        this.emailNormalized = this.email.trim().toLowerCase();
+    }
+    if (this.username) {
+        this.usernameNormalized = this.username.trim().toLowerCase();
+    }
+    next();
 });
 
 const User = models.User || model('User', UserSchema);

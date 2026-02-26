@@ -10,9 +10,10 @@ export async function POST(request: Request) {
     try {
         await dbConnect();
         const { email, password } = await request.json();
+        const emailNormalized = email.trim().toLowerCase();
 
-        // Find user
-        const user = await User.findOne({ email });
+        // Find user by normalized email
+        const user = await User.findOne({ emailNormalized });
         if (!user) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
