@@ -44,8 +44,14 @@ export async function POST(request: Request) {
                 expiresAt
             });
 
-            // MOCK EMAIL SEND
-            console.log(`[2FA LOGIN OTP] To: ${user.email}, Code: ${code}`);
+            const { sendEmail } = await import('@/lib/email');
+            await sendEmail({
+                to: user.email,
+                subject: 'Security: Your Login Verification Code - SwiftPay',
+                title: 'Login Verification',
+                body: 'A login attempt was made for your SwiftPay account. Please use the verification code below to authorize this session.',
+                code: code
+            });
 
             return NextResponse.json({
                 status: '2FA_REQUIRED',

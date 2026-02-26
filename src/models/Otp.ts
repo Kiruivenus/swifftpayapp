@@ -13,7 +13,7 @@ const OtpSchema = new Schema({
     },
     type: {
         type: String,
-        enum: ['2FA_ENABLE', '2FA_LOGIN', 'PASSWORD_RESET', 'PIN_RESET'],
+        enum: ['2FA_ENABLE', '2FA_DISABLE', '2FA_LOGIN', 'PASSWORD_RESET', 'PIN_RESET'],
         required: true,
     },
     expiresAt: {
