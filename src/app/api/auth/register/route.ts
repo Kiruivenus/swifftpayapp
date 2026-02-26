@@ -56,7 +56,9 @@ export async function POST(request: Request) {
         await sendEmail({
             to: email,
             subject: 'Verify your email - SwiftPay',
-            body: `Your verification code is: ${code}. It expires in 10 minutes.`
+            title: 'Welcome to SwiftPay!',
+            body: `Thank you for joining SwiftPay. To complete your registration and secure your account, please use the 6-digit verification code below.`,
+            code: code,
         });
 
         return NextResponse.json({

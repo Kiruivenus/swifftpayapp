@@ -41,8 +41,10 @@ export async function POST(req: NextRequest) {
             const { sendEmail } = await import('@/lib/email');
             await sendEmail({
                 to: user.email,
-                subject: 'Your PIN Reset Code',
-                body: `Use this code to reset your transaction PIN: ${resetCode}. It expires in 10 minutes.`
+                subject: 'Security: PIN Reset Code - SwiftPay',
+                title: 'Reset Your PIN',
+                body: `We noticed a request to reset your transaction PIN. For your security, please use the code below to complete the process.`,
+                code: resetCode,
             });
 
             return NextResponse.json({ message: 'Reset code sent' });

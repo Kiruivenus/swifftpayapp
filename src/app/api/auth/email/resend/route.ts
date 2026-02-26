@@ -40,7 +40,9 @@ export async function POST(request: Request) {
         await sendEmail({
             to: email,
             subject: 'Verify your email - SwiftPay',
-            body: `Your new verification code is: ${code}. It expires in 10 minutes.`
+            title: 'New Verification Code',
+            body: `You requested a new verification code. Please use the 6-digit code below to verify your account. If you didn't request this, no further action is needed.`,
+            code: code,
         });
 
         return NextResponse.json({ message: 'Verification code resent successfully' });

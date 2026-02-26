@@ -48,8 +48,10 @@ export async function POST(request: Request) {
         // Send Confirmation Email
         await sendEmail({
             to: email,
-            subject: 'Password Changed - SwiftPay',
-            body: 'Your password was changed successfully. If this wasn’t you, contact support immediately.'
+            subject: 'Password Changed Successfully - SwiftPay',
+            title: 'Password Updated',
+            body: 'Your SwiftPay account password was changed successfully. You can now log in with your new password.',
+            actionText: 'You can now safely close this window.'
         });
 
         return NextResponse.json({ message: 'Password reset successful' });

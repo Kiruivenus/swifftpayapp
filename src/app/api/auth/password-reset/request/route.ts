@@ -40,7 +40,9 @@ export async function POST(request: Request) {
         await sendEmail({
             to: email,
             subject: 'Password Reset Code - SwiftPay',
-            body: `Your password reset code is: ${code}. It expires in 10 minutes.`
+            title: 'Reset Your Password',
+            body: `We received a request to reset your password. Use the 6-digit code below to proceed with the reset. If you didn't request this, you can safely ignore this email.`,
+            code: code,
         });
 
         return NextResponse.json({
