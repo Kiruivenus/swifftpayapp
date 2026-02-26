@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Otp from '@/models/Otp';
 import User from '@/models/User';
+import Session from '@/models/Session';
 import TrustedDevice from '@/models/TrustedDevice';
 
 export async function POST(req: NextRequest) {
@@ -58,8 +59,43 @@ export async function POST(req: NextRequest) {
             { expiresIn: '1d' }
         );
 
+        // Create or update session
+        const ipAddress = req.headers.get('x-forwarded-for') || 'Unknown';
+
+        let session;
+        if (deviceId) {
+            session = await Session.findOneAndUpdate(
+                { userId: user._id, deviceId },
+                {
+                    token,
+                    deviceName: deviceInfo?.name || 'Unknown Device',
+                    platform: deviceInfo?.platform || 'Android',
+                    osVersion: deviceInfo?.osVersion,
+                    appVersion: deviceInfo?.appVersion,
+                    ipAddress,
+                    isActive: true,
+                    revokedAt: null,
+                    lastActive: new Date()
+                },
+                { upsert: true, new: true }
+            );
+        } else {
+            session = await Session.create({
+                userId: user._id,
+                token,
+                deviceName: deviceInfo?.name || 'Unknown Device',
+                platform: deviceInfo?.platform || 'Android',
+                osVersion: deviceInfo?.osVersion,
+                appVersion: deviceInfo?.appVersion,
+                ipAddress,
+                isActive: true,
+                lastActive: new Date()
+            });
+        }
+
         return NextResponse.json({
             token,
+            sessionId: session._id,
             role: user.role,
             username: user.username
         });

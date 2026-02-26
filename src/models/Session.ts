@@ -11,13 +11,25 @@ const SessionSchema = new Schema({
         required: true,
         unique: true,
     },
+    refreshTokenHash: String,
+    deviceId: {
+        type: String,
+        index: true,
+    },
     deviceName: String,
     platform: String,
+    osVersion: String,
+    appVersion: String,
     ipAddress: String,
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     lastActive: {
         type: Date,
         default: Date.now,
     },
+    revokedAt: Date,
     createdAt: {
         type: Date,
         default: Date.now,

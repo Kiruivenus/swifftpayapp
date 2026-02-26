@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
+import Session from '@/models/Session';
 import TrustedDevice from '@/models/TrustedDevice';
 import { sendPushNotification } from '@/lib/notifications';
 
@@ -91,6 +92,40 @@ export async function POST(request: Request) {
             { expiresIn: '1d' }
         );
 
+        // Create or update session
+        const ipAddress = request.headers.get('x-forwarded-for') || 'Unknown';
+
+        let session;
+        if (deviceId) {
+            session = await Session.findOneAndUpdate(
+                { userId: user._id, deviceId },
+                {
+                    token,
+                    deviceName: deviceInfo?.name || 'Unknown Device',
+                    platform: deviceInfo?.platform || 'Android',
+                    osVersion: deviceInfo?.osVersion,
+                    appVersion: deviceInfo?.appVersion,
+                    ipAddress,
+                    isActive: true,
+                    revokedAt: null,
+                    lastActive: new Date()
+                },
+                { upsert: true, new: true }
+            );
+        } else {
+            session = await Session.create({
+                userId: user._id,
+                token,
+                deviceName: deviceInfo?.name || 'Unknown Device',
+                platform: deviceInfo?.platform || 'Android',
+                osVersion: deviceInfo?.osVersion,
+                appVersion: deviceInfo?.appVersion,
+                ipAddress,
+                isActive: true,
+                lastActive: new Date()
+            });
+        }
+
         // Trigger Notification (Async)
         sendPushNotification(
             user._id.toString(),
@@ -101,11 +136,13 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             token,
+            sessionId: session._id,
             role: user.role,
             username: user.username
         });
 
     } catch (error: any) {
+        console.error('Login Error:', error);
         return NextResponse.json({ message: error.message }, { status: 500 });
     }
 }

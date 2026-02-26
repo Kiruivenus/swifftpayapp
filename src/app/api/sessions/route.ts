@@ -11,9 +11,20 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const sessions = await Session.find({ userId: user.id }).sort({ lastActive: -1 });
+        const authHeader = req.headers.get('authorization');
+        const currentToken = authHeader?.split(' ')[1];
 
-        return NextResponse.json(sessions);
+        const sessions = await Session.find({
+            userId: user.id,
+            isActive: true
+        }).sort({ lastActive: -1 });
+
+        const mappedSessions = sessions.map(s => ({
+            ...s.toObject(),
+            isCurrentSession: s.token === currentToken
+        }));
+
+        return NextResponse.json(mappedSessions);
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });
     }
@@ -27,19 +38,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { sessionId, logoutAllOthers } = await req.json();
+        const { sessionId, logoutAllOthers, logoutAll } = await req.json();
+
+        // Get current token from request
+        const authHeader = req.headers.get('authorization');
+        const currentToken = authHeader?.split(' ')[1];
+
+        if (logoutAll) {
+            await Session.updateMany(
+                { userId: user.id },
+                { isActive: false, revokedAt: new Date() }
+            );
+            return NextResponse.json({ message: 'Logged out from all devices' });
+        }
 
         if (logoutAllOthers) {
-            // Get current token from request to keep current session
-            const authHeader = req.headers.get('authorization');
-            const currentToken = authHeader?.split(' ')[1];
-
-            await Session.deleteMany({ userId: user.id, token: { $ne: currentToken } });
+            await Session.updateMany(
+                { userId: user.id, token: { $ne: currentToken } },
+                { isActive: false, revokedAt: new Date() }
+            );
             return NextResponse.json({ message: 'Other sessions logged out' });
         }
 
         if (sessionId) {
-            await Session.findByIdAndDelete(sessionId);
+            await Session.findOneAndUpdate(
+                { _id: sessionId, userId: user.id },
+                { isActive: false, revokedAt: new Date() }
+            );
             return NextResponse.json({ message: 'Session logged out' });
         }
 
