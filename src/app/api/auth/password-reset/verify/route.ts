@@ -12,9 +12,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Email, code and resetToken are required' }, { status: 400 });
         }
 
+        const emailNormalized = email.trim().toLowerCase();
+
         // Verify OTP
         const otps = await Otp.find({
-            identifier: email,
+            identifier: emailNormalized,
             type: 'PASSWORD_RESET',
             expiresAt: { $gt: new Date() }
         });

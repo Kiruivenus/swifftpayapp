@@ -3,18 +3,21 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Otp from '@/models/Otp';
 import User from '@/models/User';
+import TrustedDevice from '@/models/TrustedDevice';
 
 export async function POST(req: NextRequest) {
     try {
         await dbConnect();
-        const { email, code } = await req.json();
+        const { email, code, deviceId, deviceInfo } = await req.json();
 
         if (!email || !code) {
             return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
         }
 
+        const emailNormalized = email.trim().toLowerCase();
+
         const otp = await Otp.findOne({
-            identifier: email,
+            identifier: emailNormalized,
             code,
             type: '2FA_LOGIN',
             expiresAt: { $gt: new Date() }
@@ -24,9 +27,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ emailNormalized });
         if (!user) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        }
+
+        // Add to trusted devices if deviceId is provided
+        if (deviceId) {
+            await TrustedDevice.findOneAndUpdate(
+                { userId: user._id, deviceId },
+                {
+                    userId: user._id,
+                    deviceId,
+                    deviceName: deviceInfo?.name || 'Unknown Device',
+                    platform: deviceInfo?.platform || 'Unknown',
+                    lastUsedAt: new Date(),
+                    revokedAt: null
+                },
+                { upsert: true, new: true }
+            );
         }
 
         // Clean up OTP

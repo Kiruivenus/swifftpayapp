@@ -14,13 +14,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: 'Email is required' }, { status: 400 });
         }
 
-        const user = await User.findOne({ email });
-
-        // Requirement: Do NOT reveal if user exists for security OR follow user prompt to show error.
-        // User prompt says: "If user does NOT exist: show error 'No account found with this email.'"
-        if (!user) {
-            return NextResponse.json({ message: 'No account found with this email.' }, { status: 404 });
-        }
+        const emailNormalized = email.trim().toLowerCase();
 
         // Generate code
         const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -30,7 +24,7 @@ export async function POST(request: Request) {
         const resetToken = crypto.randomBytes(32).toString('hex');
 
         await Otp.create({
-            identifier: email,
+            identifier: emailNormalized,
             code,
             type: 'PASSWORD_RESET',
             expiresAt

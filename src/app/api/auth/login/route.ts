@@ -4,12 +4,18 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
+import TrustedDevice from '@/models/TrustedDevice';
 import { sendPushNotification } from '@/lib/notifications';
 
 export async function POST(request: Request) {
     try {
         await dbConnect();
-        const { email, password } = await request.json();
+        const { email, password, deviceId, deviceInfo } = await request.json();
+
+        if (!email || !password) {
+            return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+        }
+
         const emailNormalized = email.trim().toLowerCase();
 
         // Find user by normalized email
@@ -33,38 +39,56 @@ export async function POST(request: Request) {
             }, { status: 403 });
         }
 
-        // Check 2FA
+        // Check 2FA and Device Trust
         if (user.twoFactorEnabled) {
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            let isTrusted = false;
+            if (deviceId) {
+                const trustedDevice = await TrustedDevice.findOne({
+                    userId: user._id,
+                    deviceId: deviceId,
+                    revokedAt: null
+                });
+                if (trustedDevice) {
+                    isTrusted = true;
+                    // Update last used
+                    trustedDevice.lastUsedAt = new Date();
+                    await trustedDevice.save();
+                }
+            }
 
-            await Otp.create({
-                identifier: user.email,
-                code,
-                type: '2FA_LOGIN',
-                expiresAt
-            });
+            if (!isTrusted) {
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-            const { sendEmail } = await import('@/lib/email');
-            await sendEmail({
-                to: user.email,
-                subject: 'Security: Your Login Verification Code - SwiftPay',
-                title: 'Login Verification',
-                body: 'A login attempt was made for your SwiftPay account. Please use the verification code below to authorize this session.',
-                code: code
-            });
+                await Otp.create({
+                    identifier: emailNormalized,
+                    code,
+                    type: '2FA_LOGIN',
+                    expiresAt
+                });
 
-            return NextResponse.json({
-                status: '2FA_REQUIRED',
-                email: user.email,
-                message: 'Two-factor authentication required'
-            });
+                const { sendEmail } = await import('@/lib/email');
+                await sendEmail({
+                    to: user.email,
+                    subject: 'Security: Your Login Verification Code - SwiftPay',
+                    title: 'Login Verification',
+                    body: 'A login attempt was made from a new device. Please use the verification code below to authorize this session.',
+                    code: code
+                });
+
+                return NextResponse.json({
+                    status: '2FA_REQUIRED',
+                    email: user.email,
+                    message: 'Two-factor authentication required for this device'
+                });
+            }
         }
 
         // Create token
         const token = jwt.sign(
             { id: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '1d' }
         );
 
         // Trigger Notification (Async)
