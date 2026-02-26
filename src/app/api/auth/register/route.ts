@@ -93,7 +93,14 @@ export async function POST(request: Request) {
             kesBalance: 0,
             usdtBalance: 0,
             status: 'PENDING_VERIFICATION',
-            emailVerified: false
+            emailVerified: false,
+            biometricEnabled: false,
+            notificationPrefs: {
+                enabled: false,
+                transactions: false,
+                security: false,
+                promotions: false
+            }
         });
 
         // Generate Verification OTP

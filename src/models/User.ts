@@ -51,9 +51,9 @@ const UserSchema = new Schema({
     },
     deletedAt: Date,
     notificationPrefs: {
-        enabled: { type: Boolean, default: true },
-        transactions: { type: Boolean, default: true },
-        security: { type: Boolean, default: true },
+        enabled: { type: Boolean, default: false },
+        transactions: { type: Boolean, default: false },
+        security: { type: Boolean, default: false },
         promotions: { type: Boolean, default: false },
     },
     createdAt: {

@@ -40,23 +40,31 @@ export async function POST(request: Request) {
             }, { status: 403 });
         }
 
-        // Check 2FA and Device Trust
-        if (user.twoFactorEnabled) {
-            let isTrusted = false;
-            if (deviceId) {
-                const trustedDevice = await TrustedDevice.findOne({
-                    userId: user._id,
-                    deviceId: deviceId,
-                    revokedAt: null
-                });
-                if (trustedDevice) {
-                    isTrusted = true;
-                    // Update last used
-                    trustedDevice.lastUsedAt = new Date();
-                    await trustedDevice.save();
-                }
+        // Check Device Trust and handle biometric security
+        let isTrusted = false;
+        if (deviceId) {
+            const trustedDevice = await TrustedDevice.findOne({
+                userId: user._id,
+                deviceId: deviceId,
+                revokedAt: null
+            });
+            if (trustedDevice) {
+                isTrusted = true;
+                // Update last used
+                trustedDevice.lastUsedAt = new Date();
+                await trustedDevice.save();
             }
+        }
 
+        // SECURITY: If not a trusted device, disable transaction biometrics
+        // User must re-enable them on the new device
+        if (!isTrusted && user.biometricEnabled) {
+            user.biometricEnabled = false;
+            await user.save();
+        }
+
+        // Check 2FA
+        if (user.twoFactorEnabled) {
             if (!isTrusted) {
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
