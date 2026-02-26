@@ -93,14 +93,13 @@ const UserSchema = new Schema({
 });
 
 // Pre-validation hook to ensure normalized fields are populated
-UserSchema.pre('validate', function (next) {
+UserSchema.pre('validate', async function () {
     if (this.email) {
         this.emailNormalized = this.email.trim().toLowerCase();
     }
     if (this.username) {
         this.usernameNormalized = this.username.trim().toLowerCase();
     }
-    next();
 });
 
 const User = models.User || model('User', UserSchema);
