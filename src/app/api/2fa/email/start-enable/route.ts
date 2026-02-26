@@ -4,6 +4,8 @@ import Otp from '@/models/Otp';
 import User from '@/models/User';
 import { verifyAuth } from '@/lib/auth';
 
+import { sendEmail } from '@/lib/email';
+
 // Helper to generate 6-digit code
 function generateCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -27,8 +29,14 @@ export async function POST(req: NextRequest) {
             expiresAt
         });
 
-        // MOCK EMAIL SEND
-        console.log(`[2FA OTP] To: ${user.email}, Code: ${code}`);
+        // Send Real Email
+        await sendEmail({
+            to: user.email,
+            subject: 'Security: Enable 2FA Verification - SwiftPay',
+            title: 'Verify Two-Factor Authentication',
+            body: 'You are enabling Two-Factor Authentication for your SwiftPay account. Please enter the verification code below to confirm this change.',
+            code: code
+        });
 
         return NextResponse.json({ message: 'OTP sent to your email' });
     } catch (error: any) {
