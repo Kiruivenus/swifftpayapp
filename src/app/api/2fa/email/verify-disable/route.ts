@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Otp from '@/models/Otp';
 import User from '@/models/User';
 import { verifyAuth } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
     try {
@@ -19,11 +20,10 @@ export async function POST(req: NextRequest) {
 
         const otps = await Otp.find({
             identifier: user.email,
-            type: '2FA_ENABLE',
+            type: '2FA_DISABLE',
             expiresAt: { $gt: new Date() }
         }).sort({ createdAt: -1 });
 
-        const bcrypt = await import('bcryptjs');
         let validOtp = null;
         for (const otp of otps) {
             const isMatch = await bcrypt.compare(code, otp.code);
@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });
         }
 
-        await User.findByIdAndUpdate(user.id, { twoFactorEnabled: true });
+        await User.findByIdAndUpdate(user.id, { twoFactorEnabled: false });
         await Otp.deleteOne({ _id: validOtp._id });
 
-        return NextResponse.json({ message: '2FA enabled successfully' });
+        return NextResponse.json({ message: 'Two-Factor Authentication disabled successfully' });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });
     }

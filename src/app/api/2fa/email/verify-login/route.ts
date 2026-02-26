@@ -17,14 +17,22 @@ export async function POST(req: NextRequest) {
 
         const emailNormalized = email.trim().toLowerCase();
 
-        const otp = await Otp.findOne({
+        const otps = await Otp.find({
             identifier: emailNormalized,
-            code,
             type: '2FA_LOGIN',
             expiresAt: { $gt: new Date() }
-        });
+        }).sort({ createdAt: -1 });
 
-        if (!otp) {
+        const bcrypt = await import('bcryptjs');
+        let validOtp = null;
+        for (const otp of otps) {
+            if (await bcrypt.compare(code, otp.code)) {
+                validOtp = otp;
+                break;
+            }
+        }
+
+        if (!validOtp) {
             return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });
         }
 
