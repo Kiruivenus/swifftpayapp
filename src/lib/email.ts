@@ -11,10 +11,15 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendEmail({ to, subject, body }: { to: string, subject: string, body: string }) {
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM } = process.env;
+    const SMTP_HOST = process.env.SMTP_HOST?.trim();
+    const SMTP_PORT = process.env.SMTP_PORT?.trim();
+    const SMTP_USER = process.env.SMTP_USER?.trim();
+    const SMTP_PASS = process.env.SMTP_PASS?.trim();
+    const EMAIL_FROM = process.env.EMAIL_FROM?.trim();
 
     if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || SMTP_USER === 'your-email@gmail.com') {
-        throw new Error('Email configuration is missing or using default placeholders in .env');
+        console.error('SMTP Check:', { SMTP_HOST, SMTP_USER, hasPass: !!SMTP_PASS });
+        throw new Error(`Email configuration is missing or using default placeholders in .env (User: ${SMTP_USER})`);
     }
 
     const transporter = nodemailer.createTransport({
