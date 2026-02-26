@@ -11,9 +11,13 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
         }
 
+        const protocol = req.headers.get('x-forwarded-proto') || 'http';
+        const host = req.headers.get('host');
+        const baseUrl = `${protocol}://${host}`;
+
         return NextResponse.json({
             status: 'READY',
-            downloadUrl: `https://api.swiftpay.ke/v1/data/export/download/${user.id}`,
+            downloadUrl: `${baseUrl}/api/data/export/download`,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
         });
     } catch (error: any) {

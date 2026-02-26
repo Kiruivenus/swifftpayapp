@@ -90,6 +90,9 @@ const UserSchema = new Schema({
     },
     countryCode: String,
     currency: String,
+    userSettings: {
+        hideBalances: { type: Boolean, default: false },
+    },
 });
 
 // Pre-validation hook to ensure normalized fields are populated
