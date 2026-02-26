@@ -11,12 +11,28 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendEmail({ to, subject, body }: { to: string, subject: string, body: string }) {
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM } = process.env;
+
+    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || SMTP_USER === 'your-email@gmail.com') {
+        throw new Error('Email configuration is missing or using default placeholders in .env');
+    }
+
+    const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: parseInt(SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS,
+        },
+    });
+
     try {
         const mailOptions = {
-            from: process.env.EMAIL_FROM,
+            from: EMAIL_FROM,
             to,
             subject,
-            html: body, // Use HTML for body to allow formatting
+            html: body,
         };
 
         const info = await transporter.sendMail(mailOptions);
