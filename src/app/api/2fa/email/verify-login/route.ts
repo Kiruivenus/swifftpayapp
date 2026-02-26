@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Clean up OTP
-        await Otp.deleteOne({ _id: otp._id });
+        await Otp.deleteOne({ _id: validOtp._id });
 
         // Create final token
         const token = jwt.sign(
