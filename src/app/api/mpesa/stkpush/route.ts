@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
-import axios from 'axios';
 
 const CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET;
@@ -12,17 +11,19 @@ const CALLBACK_URL = process.env.MPESA_CALLBACK_URL;
 async function getMpesaToken() {
     const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString('base64');
     try {
-        const response = await axios.get(
+        const response = await fetch(
             'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
             {
+                method: 'GET',
                 headers: {
                     Authorization: `Basic ${auth}`,
                 },
             }
         );
-        return response.data.access_token;
-    } catch (error) {
-        console.error('M-Pesa Token Error:', error);
+        const data = await response.json();
+        return data.access_token;
+    } catch (error: any) {
+        console.error('M-Pesa Token Error:', error.message);
         throw new Error('Failed to get M-Pesa token');
     }
 }
@@ -36,29 +37,33 @@ export async function POST(req: Request) {
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
         const password = Buffer.from(`${SHORTCODE}${PASSKEY}${timestamp}`).toString('base64');
 
-        const stkResponse = await axios.post(
+        const stkResponse = await fetch(
             'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
             {
-                BusinessShortCode: SHORTCODE,
-                Password: password,
-                Timestamp: timestamp,
-                TransactionType: 'CustomerPayBillOnline',
-                Amount: amount,
-                PartyA: phoneNumber,
-                PartyB: SHORTCODE,
-                PhoneNumber: phoneNumber,
-                CallBackURL: CALLBACK_URL,
-                AccountReference: 'SwiftPay Deposit',
-                TransactionDesc: 'Deposit to SwiftPay Wallet',
-            },
-            {
+                method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({
+                    BusinessShortCode: SHORTCODE,
+                    Password: password,
+                    Timestamp: timestamp,
+                    TransactionType: 'CustomerPayBillOnline',
+                    Amount: amount,
+                    PartyA: phoneNumber,
+                    PartyB: SHORTCODE,
+                    PhoneNumber: phoneNumber,
+                    CallBackURL: CALLBACK_URL,
+                    AccountReference: 'SwiftPay Deposit',
+                    TransactionDesc: 'Deposit to SwiftPay Wallet',
+                }),
             }
         );
 
-        if (stkResponse.data.ResponseCode === '0') {
+        const stkData = await stkResponse.json();
+
+        if (stkData.ResponseCode === '0') {
             // Create a pending transaction in MongoDB
             await Transaction.create({
                 userId,
@@ -68,13 +73,13 @@ export async function POST(req: Request) {
                 method: 'MPESA',
                 status: 'PENDING',
                 phoneNumber,
-                checkoutRequestID: stkResponse.data.CheckoutRequestID,
+                checkoutRequestID: stkData.CheckoutRequestID,
             });
 
             return NextResponse.json({
                 success: true,
                 message: 'STK Push sent successfully',
-                CheckoutRequestID: stkResponse.data.CheckoutRequestID,
+                CheckoutRequestID: stkData.CheckoutRequestID,
             });
         } else {
             return NextResponse.json(
