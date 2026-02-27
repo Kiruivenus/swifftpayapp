@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         const updatedUser = await User.findByIdAndUpdate(
             user.id,
             { profilePhotoUrl: photoUrl },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         return NextResponse.json({

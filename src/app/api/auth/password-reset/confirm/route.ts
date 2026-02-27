@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         const user = await User.findOneAndUpdate(
             { emailNormalized },
             { password: hashedPassword },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!user) {

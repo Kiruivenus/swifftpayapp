@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         if (nationalityName) updateData.nationalityName = nationalityName;
         if (residentialAddress) updateData.residentialAddress = residentialAddress.trim();
 
-        const updatedUser = await User.findByIdAndUpdate(user.id, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(user.id, updateData, { returnDocument: 'after' });
 
         return NextResponse.json({
             success: true,

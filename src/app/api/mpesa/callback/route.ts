@@ -28,7 +28,7 @@ export async function POST(req: Request) {
                     mpesaReceiptNumber,
                     amount // Ensure amount matches
                 },
-                { new: true }
+                { returnDocument: 'after' }
             );
 
             if (transaction) {
