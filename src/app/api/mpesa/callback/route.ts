@@ -7,6 +7,7 @@ export async function POST(req: Request) {
     try {
         await dbConnect();
         const body = await req.json();
+        console.log('M-Pesa Callback Full Body:', JSON.stringify(body, null, 2));
         const result = body.Body.stkCallback;
 
         const checkoutRequestID = result.CheckoutRequestID;

@@ -50,13 +50,13 @@ export async function POST(req: Request) {
                     Password: password,
                     Timestamp: timestamp,
                     TransactionType: 'CustomerPayBillOnline',
-                    Amount: amount,
+                    Amount: Math.round(amount),
                     PartyA: phoneNumber,
                     PartyB: SHORTCODE,
                     PhoneNumber: phoneNumber,
                     CallBackURL: CALLBACK_URL,
-                    AccountReference: 'SwiftPay Deposit',
-                    TransactionDesc: 'Deposit to SwiftPay Wallet',
+                    AccountReference: 'SwiftPay',
+                    TransactionDesc: 'Deposit',
                 })
             }
         );
