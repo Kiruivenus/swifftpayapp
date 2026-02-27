@@ -17,6 +17,12 @@ export async function POST(req: NextRequest) {
 
         await dbConnect();
 
+        // Fetch full user profile to get fullName, dob, etc.
+        const dbUser = await User.findById(user.id);
+        if (!dbUser) {
+            return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        }
+
         // 1. Check if user already has a pending or approved KYC
         const existingRequest = await KycRequest.findOne({
             userId: user.id,
@@ -40,9 +46,9 @@ export async function POST(req: NextRequest) {
         // 3. Create KYC Request
         const kycReq = await KycRequest.create({
             userId: user.id,
-            fullName: user.fullName,
-            dob: user.dob,
-            nationality: user.nationalityName,
+            fullName: dbUser.fullName,
+            dob: dbUser.dob,
+            nationality: dbUser.nationalityName,
             documentType,
             documentNumber,
             frontImageUrl,
