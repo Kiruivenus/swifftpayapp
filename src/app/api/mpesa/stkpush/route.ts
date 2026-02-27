@@ -13,7 +13,7 @@ async function getMpesaToken() {
     const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString('base64');
     try {
         const response = await axios.get(
-            'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
+            'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
             {
                 headers: {
                     Authorization: `Basic ${auth}`,
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         const password = Buffer.from(`${SHORTCODE}${PASSKEY}${timestamp}`).toString('base64');
 
         const stkResponse = await axios.post(
-            'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+            'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
             {
                 BusinessShortCode: SHORTCODE,
                 Password: password,
