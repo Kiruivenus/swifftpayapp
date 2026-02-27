@@ -21,6 +21,10 @@ async function getMpesaToken() {
             }
         );
         const data = await response.json();
+        if (!data.access_token) {
+            console.error('M-Pesa Token Response (no token):', JSON.stringify(data));
+            throw new Error('No access_token in response');
+        }
         return data.access_token;
     } catch (error: any) {
         console.error('M-Pesa Token Error:', error.message);
@@ -48,6 +52,22 @@ export async function POST(req: Request) {
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
         const password = Buffer.from(`${SHORTCODE}${PASSKEY}${timestamp}`).toString('base64');
 
+        const requestBody = {
+            BusinessShortCode: SHORTCODE,
+            Password: password,
+            Timestamp: timestamp,
+            TransactionType: 'CustomerPayBillOnline',
+            Amount: finalAmount,
+            PartyA: phoneNumber,
+            PartyB: SHORTCODE,
+            PhoneNumber: phoneNumber,
+            CallBackURL: CALLBACK_URL,
+            AccountReference: 'SwiftPay',
+            TransactionDesc: 'Deposit',
+        };
+
+        console.log('M-Pesa STK Push Outbound Request:', JSON.stringify(requestBody, null, 2));
+
         const stkResponse = await fetch(
             'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
             {
@@ -56,29 +76,18 @@ export async function POST(req: Request) {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    BusinessShortCode: SHORTCODE,
-                    Password: password,
-                    Timestamp: timestamp,
-                    TransactionType: 'CustomerPayBillOnline',
-                    Amount: finalAmount,
-                    PartyA: phoneNumber,
-                    PartyB: SHORTCODE,
-                    PhoneNumber: phoneNumber,
-                    CallBackURL: CALLBACK_URL,
-                    AccountReference: 'SwiftPay',
-                    TransactionDesc: 'Deposit',
-                })
+                body: JSON.stringify(requestBody),
             }
         );
 
         const stkData = await stkResponse.json();
+        console.log('M-Pesa STK Push API Response:', JSON.stringify(stkData, null, 2));
 
         if (stkData.ResponseCode === '0') {
             // Create a pending transaction in MongoDB
             await Transaction.create({
                 userId,
-                amount,
+                amount: finalAmount,
                 currency: 'KES',
                 type: 'DEPOSIT',
                 method: 'MPESA',
