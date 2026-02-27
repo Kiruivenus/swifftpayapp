@@ -13,8 +13,14 @@ export async function POST(req: NextRequest) {
         const { username, fullName, phone, dob, nationalityCode, nationalityName, residentialAddress } = await req.json();
         await dbConnect();
 
+        // Fetch full user record to check current data and kycStatus
+        const dbUser = await User.findById(user.id);
+        if (!dbUser) {
+            return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        }
+
         // 1. Check KYC Status Restriction
-        if (user.kycStatus === 'PENDING' || user.kycStatus === 'APPROVED') {
+        if (dbUser.kycStatus === 'PENDING' || dbUser.kycStatus === 'APPROVED') {
             return NextResponse.json({
                 success: false,
                 error: {
@@ -27,7 +33,7 @@ export async function POST(req: NextRequest) {
         const updateData: any = {};
 
         // 2. Uniqueness Validations (if changed)
-        if (username && username !== user.username) {
+        if (username && username !== dbUser.username) {
             const usernameNormalized = username.trim().toLowerCase();
             const existingUser = await User.findOne({ usernameNormalized });
             if (existingUser) {
@@ -37,7 +43,7 @@ export async function POST(req: NextRequest) {
             updateData.usernameNormalized = usernameNormalized;
         }
 
-        if (phone && phone !== user.phoneNumber) {
+        if (phone && phone !== dbUser.phoneNumber) {
             // Basic check for phone uniqueness (should ideally be more robust E164 check)
             const existingPhone = await User.findOne({ phoneNumber: phone });
             if (existingPhone) {

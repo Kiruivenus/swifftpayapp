@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         }
 
         await dbConnect();
-        const dbUser = await User.findById(user.id).select('username fullName email phoneNumber dob isPinSet biometricEnabled');
+        const dbUser = await User.findById(user.id).select('username fullName email phoneNumber dob isPinSet biometricEnabled kycStatus kycRejectionReason nationalityCode nationalityName residentialAddress profilePhotoUrl');
         if (!dbUser) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
@@ -24,7 +24,13 @@ export async function GET(req: NextRequest) {
             phone: dbUser.phoneNumber,
             dob: dbUser.dob ? dbUser.dob.toISOString().split('T')[0] : null,
             isPinSet: dbUser.isPinSet || false,
-            biometricEnabled: dbUser.biometricEnabled || false
+            biometricEnabled: dbUser.biometricEnabled || false,
+            kycStatus: dbUser.kycStatus || 'NOT_STARTED',
+            kycRejectionReason: dbUser.kycRejectionReason,
+            nationalityCode: dbUser.nationalityCode,
+            nationalityName: dbUser.nationalityName,
+            residentialAddress: dbUser.residentialAddress,
+            profilePhotoUrl: dbUser.profilePhotoUrl
         });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });
