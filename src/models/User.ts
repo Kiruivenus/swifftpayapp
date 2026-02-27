@@ -90,6 +90,16 @@ const UserSchema = new Schema({
     },
     countryCode: String,
     currency: String,
+    kycStatus: {
+        type: String,
+        enum: ['NOT_STARTED', 'PENDING', 'APPROVED', 'REJECTED'],
+        default: 'NOT_STARTED',
+    },
+    kycRejectionReason: String,
+    nationalityCode: String,
+    nationalityName: String,
+    residentialAddress: String,
+    profilePhotoUrl: String,
     userSettings: {
         hideBalances: { type: Boolean, default: false },
     },
