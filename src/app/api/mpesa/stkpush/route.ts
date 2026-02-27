@@ -31,7 +31,18 @@ async function getMpesaToken() {
 export async function POST(req: Request) {
     try {
         await dbConnect();
-        const { amount, phoneNumber, userId } = await req.json();
+        const { amount, phoneNumber: rawPhoneNumber, userId } = await req.json();
+
+        // 1. Normalize Phone Number to 254... format
+        let phoneNumber = rawPhoneNumber.replace(/\D/g, '');
+        if (phoneNumber.startsWith('0')) {
+            phoneNumber = '254' + phoneNumber.substring(1);
+        } else if (phoneNumber.length === 9) {
+            phoneNumber = '254' + phoneNumber;
+        }
+
+        // 2. Validate Amount (Min 1, Round to integer)
+        const finalAmount = Math.max(1, Math.round(amount));
 
         const token = await getMpesaToken();
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
@@ -50,7 +61,7 @@ export async function POST(req: Request) {
                     Password: password,
                     Timestamp: timestamp,
                     TransactionType: 'CustomerPayBillOnline',
-                    Amount: Math.round(amount),
+                    Amount: finalAmount,
                     PartyA: phoneNumber,
                     PartyB: SHORTCODE,
                     PhoneNumber: phoneNumber,
