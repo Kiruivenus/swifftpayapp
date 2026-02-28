@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
 import bcrypt from 'bcryptjs';
 import { sendEmail } from '@/lib/email';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         await dbConnect();
         const { email, resetToken, newPassword } = await request.json();

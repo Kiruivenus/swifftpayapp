@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
@@ -11,7 +11,7 @@ import TrustedDevice from '@/models/TrustedDevice';
 import { sendNotification } from '@/lib/notifications';
 import { lookupIp } from '@/lib/geo';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
         await dbConnect();
         const { email, password, deviceId, deviceInfo, sessionType = 'mobile' } = await request.json();
