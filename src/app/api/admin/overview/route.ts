@@ -14,15 +14,29 @@ export async function GET(req: NextRequest) {
     try {
         await dbConnect();
 
-        // 1. User Stats
-        const totalUsers = await User.countDocuments({ role: 'user' });
-        const verifiedUsers = await User.countDocuments({ role: 'user', kycStatus: 'APPROVED' });
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+        // 1. User Stats (Case-insensitive role match)
+        const userQuery = { role: { $in: ['user', 'USER'] } };
+        const totalUsers = await User.countDocuments(userQuery);
+        const verifiedUsers = await User.countDocuments({ ...userQuery, kycStatus: 'APPROVED' });
+
+        // User Deltas (Growth over last 30 days)
+        const usersPrev = await User.countDocuments({ ...userQuery, createdAt: { $lt: thirtyDaysAgo } });
+        const kycPrev = await User.countDocuments({ ...userQuery, kycStatus: 'APPROVED', updatedAt: { $lt: thirtyDaysAgo } });
+
+        const calculateDelta = (curr: number, prev: number) => {
+            if (prev === 0) return curr > 0 ? `+${(curr * 100).toFixed(1)}%` : "0.0%";
+            const diff = ((curr - prev) / prev) * 100;
+            return `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+        };
 
         // 2. KYC Stats
         const pendingKyc = await KycRequest.countDocuments({ status: 'PENDING' });
 
-        // 3. Finance Stats (Aggregated from Transactions)
-        // Note: For production, we'd use pre-computed stats or a more efficient aggregation
+        // 3. Finance Stats
         const financeStats = await Transaction.aggregate([
             { $match: { status: 'SUCCESS' } },
             {
@@ -36,15 +50,49 @@ export async function GET(req: NextRequest) {
         const getStats = (type: string, currency: string) =>
             financeStats.find(s => s._id.type === type && s._id.currency === currency)?.total || 0;
 
-        // 4. Session Stats
-        const activeSessions = await Session.countDocuments({ isActive: true });
+        // Finance Deltas
+        const financeDeltas = await Transaction.aggregate([
+            {
+                $match: {
+                    status: 'SUCCESS',
+                    createdAt: { $gt: sixtyDaysAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        period: {
+                            $cond: [{ $gt: ['$createdAt', thirtyDaysAgo] }, 'current', 'previous']
+                        }
+                    },
+                    deposits: {
+                        $sum: { $cond: [{ $eq: ['$type', 'DEPOSIT'] }, '$amount', 0] }
+                    },
+                    withdrawals: {
+                        $sum: { $cond: [{ $eq: ['$type', 'WITHDRAW'] }, '$amount', 0] }
+                    }
+                }
+            }
+        ]);
 
-        // 5. Deltas (Simplified for now - would compare with previous period)
+        const currentFinance = financeDeltas.find(d => d._id.period === 'current') || { deposits: 0, withdrawals: 0 };
+        const previousFinance = financeDeltas.find(d => d._id.period === 'previous') || { deposits: 0, withdrawals: 0 };
+
+        // 4. Session Stats (Standardize on isActive or status: 'active')
+        const activeSessions = await Session.countDocuments({
+            $or: [
+                { status: 'active' },
+                { isActive: true }
+            ],
+            expiresAt: { $gt: now }
+        });
+
+        // 5. Deltas
         const deltas = {
-            users: "+12.5%",
-            deposits: "+8.2%",
-            kyc: "-2.4%",
-            volume: "+15.1%"
+            users: calculateDelta(totalUsers, usersPrev),
+            deposits: calculateDelta(currentFinance.deposits, previousFinance.deposits),
+            kyc: calculateDelta(verifiedUsers, kycPrev),
+            volume: calculateDelta(currentFinance.withdrawals, previousFinance.withdrawals)
         };
 
         return NextResponse.json({

@@ -1,0 +1,45 @@
+{
+  "totalUsers": 13,
+  "roleCounts": [
+    {
+      "_id": "ADMIN",
+      "count": 1
+    },
+    {
+      "_id": "USER",
+      "count": 12
+    }
+  ],
+  "kycCounts": [
+    {
+      "_id": "REJECTED",
+      "count": 1
+    },
+    {
+      "_id": null,
+      "count": 11
+    },
+    {
+      "_id": "APPROVED",
+      "count": 1
+    }
+  ],
+  "activeSessionsStatus": 1,
+  "activeSessionsIsActive": 15,
+  "sampleSessionFields": [
+    "_id",
+    "userId",
+    "deviceId",
+    "__v",
+    "createdAt",
+    "deviceName",
+    "ipAddress",
+    "isActive",
+    "lastActive",
+    "platform",
+    "revokedAt",
+    "token",
+    "appVersion",
+    "osVersion"
+  ]
+}
