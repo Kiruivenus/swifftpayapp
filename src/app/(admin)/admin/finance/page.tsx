@@ -38,11 +38,11 @@ export default function FinancePage() {
             const [s, w, r] = await Promise.all([
                 adminService.getOverviewStats(),
                 adminService.getWithdrawalQueue(),
-                adminService.getRates()
+                adminService.getRatesConfig()
             ]);
             setStats(s);
             setWithdrawals(w.withdrawals || []);
-            setRates(r.rates || []);
+            setRates(r.fxRates || []);
         } catch (err: any) {
             console.error(err);
         } finally {

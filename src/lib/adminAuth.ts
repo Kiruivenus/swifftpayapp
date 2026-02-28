@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from './auth';
-import { hasPermission, isAdmin } from './rbac';
+import { hasPermission, isAdmin, Role } from './rbac';
 import SecurityPolicy from '@/models/SecurityPolicy';
 import SecurityEvent from '@/models/SecurityEvent';
 import Session from '@/models/Session';
@@ -19,7 +19,7 @@ export async function validateAdmin(req: NextRequest, permission?: string) {
         };
     }
 
-    if (!isAdmin(user.role)) {
+    if (!isAdmin(user.role as Role)) {
         return {
             error: NextResponse.json({
                 success: false,
@@ -83,7 +83,7 @@ export async function validateAdmin(req: NextRequest, permission?: string) {
     }
 
     // 3. Permission Check
-    if (permission && !hasPermission(user.role, permission)) {
+    if (permission && !hasPermission(user.role as Role, permission)) {
         return {
             error: NextResponse.json({
                 success: false,

@@ -56,7 +56,7 @@ export async function PUT(req: NextRequest) {
             details: { before, after: policies },
             ipAddress: req.headers.get('x-forwarded-for') || 'Unknown',
             userAgent: req.headers.get('user-agent') || 'Unknown',
-            severity: 'high'
+            severity: 'CRITICAL'
         });
 
         return NextResponse.json({ success: true, data: policies });
