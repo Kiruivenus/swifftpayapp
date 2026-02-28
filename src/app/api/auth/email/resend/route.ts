@@ -13,7 +13,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Email is required' }, { status: 400 });
         }
 
-        const user = await User.findOne({ email });
+        const emailNormalized = email.trim().toLowerCase();
+
+        const user = await User.findOne({ emailNormalized });
         if (!user) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
@@ -23,29 +25,32 @@ export async function POST(request: NextRequest) {
         }
 
         // Delete any existing OTPs for this email to avoid clutter
-        await Otp.deleteMany({ identifier: email });
+        await Otp.deleteMany({
+            identifier: emailNormalized,
+            type: 'EMAIL_VERIFICATION'
+        });
 
         // Generate new OTP
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         await Otp.create({
-            identifier: email,
+            identifier: emailNormalized,
             code,
-            type: '2FA_LOGIN', // Reusing OR adding new type
+            type: 'EMAIL_VERIFICATION',
             expiresAt
         });
 
         // Send Email
         await sendEmail({
-            to: email,
+            to: user.email,
             subject: 'Verify your email - SwiftPay',
-            title: 'New Verification Code',
-            body: `You requested a new verification code. Please use the 6-digit code below to verify your account. If you didn't request this, no further action is needed.`,
+            title: 'Email Verification',
+            body: `To complete your registration, please use the 6-digit verification code below. This code will expire in 10 minutes.`,
             code: code,
         });
 
-        return NextResponse.json({ message: 'Verification code resent successfully' });
+        return NextResponse.json({ ok: true, message: 'Verification code resent successfully' });
 
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });

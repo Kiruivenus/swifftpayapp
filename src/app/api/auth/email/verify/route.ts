@@ -11,12 +11,15 @@ export async function POST(request: NextRequest) {
         const { email, code } = await request.json();
 
         if (!email || !code) {
-            return NextResponse.json({ message: 'Email and code are required' }, { status: 400 });
+            return NextResponse.json({ ok: false, message: 'Email and code are required' }, { status: 400 });
         }
 
-        // Find all OTPs for this identifier
+        const emailNormalized = email.trim().toLowerCase();
+
+        // 1. Verify OTP
         const otps = await Otp.find({
-            identifier: email,
+            identifier: emailNormalized,
+            type: 'EMAIL_VERIFICATION',
             expiresAt: { $gt: new Date() }
         });
 
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Find and update user
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ emailNormalized });
         if (!user) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
@@ -46,16 +49,33 @@ export async function POST(request: NextRequest) {
         // Delete the OTP
         await Otp.deleteOne({ _id: validOtp._id });
 
+        // IMPORTANT: Create a Session so the user can actually load data (Android/Web)
+        const Session = (await import('@/models/Session')).default;
+        const session = await Session.create({
+            userId: user._id,
+            sessionType: 'web', // Defaulting to web, will be updated on next full login
+            status: 'active',
+            deviceName: 'Initial Verification',
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+        });
+
         // Generate token for auto-login
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role },
+            {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                name: user.fullName || user.username || 'User'
+            },
             process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: '1d' }
         );
 
         return NextResponse.json({
+            ok: true,
             message: 'Email verified successfully',
             token,
+            sessionId: session._id,
             role: user.role,
             username: user.username
         });

@@ -118,9 +118,13 @@ export async function POST(request: NextRequest) {
         const sessionMaxAge = policy.sessionMaxAgeHours || 24;
         const expiresAt = new Date(Date.now() + sessionMaxAge * 60 * 60 * 1000);
 
-        // JWT Token
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role, name: user.fullName || user.username || 'User' },
+            {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                name: user.fullName || user.username || 'User'
+            },
             process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: `${sessionMaxAge}h` }
         );

@@ -54,17 +54,55 @@ export async function POST(request: NextRequest) {
         // 4. Delete OTP
         await Otp.deleteOne({ _id: validOtp._id });
 
-        const response = NextResponse.json({
-            ok: true,
-            message: 'Device authorized successfully'
+        // 5. Create Session
+        const Session = (await import('@/models/Session')).default;
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+        const session = await Session.create({
+            userId: user._id,
+            sessionType: 'web',
+            status: 'active',
+            isTrusted: true,
+            deviceName: deviceInfo?.name || 'Trusted Web Browser',
+            platform: deviceInfo?.platform || 'Web',
+            expiresAt
         });
 
-        // 5. Set the TD cookie (long-lived)
+        // 6. Generate JWT Token
+        const jwt = (await import('jsonwebtoken')).default;
+        const token = jwt.sign(
+            {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                name: user.fullName || user.username || 'User'
+            },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '24h' }
+        );
+
+        const response = NextResponse.json({
+            ok: true,
+            message: 'Device authorized successfully',
+            token,
+            sessionId: session._id,
+            role: user.role,
+            username: user.username
+        });
+
+        // 7. Set Cookies
         response.cookies.set('swiftpay_td', trustedDevice._id.toString(), {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 365 // 1 year
+        });
+
+        response.cookies.set('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 // 24 hours
         });
 
         return response;

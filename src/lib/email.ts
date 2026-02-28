@@ -10,6 +10,8 @@ interface EmailOptions {
 }
 
 export function renderEmail({ title, body, code, actionText }: Partial<EmailOptions>) {
+    const primaryColor = '#e11d48';
+
     return `
     <!DOCTYPE html>
     <html>
@@ -17,48 +19,37 @@ export function renderEmail({ title, body, code, actionText }: Partial<EmailOpti
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title || 'SwiftPay Notification'}</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f7f9; }
-            .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-            .header { background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); padding: 30px; text-align: center; color: white; }
-            .header h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
-            .content { padding: 40px; }
-            .content h2 { color: #1e293b; margin-top: 0; font-size: 22px; }
-            .content p { font-size: 16px; color: #475569; margin-bottom: 24px; }
-            .code-box { background: #fff1f2; border: 2px dashed #fecdd3; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; }
-            .code { font-size: 36px; font-weight: bold; color: #e11d48; letter-spacing: 4px; font-family: monospace; }
-            .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
-            .footer p { margin: 5px 0; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #e11d48; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 10px; }
-            .security-note { border-left: 4px solid #e11d48; background: #fff1f2; padding: 15px; margin-top: 25px; font-size: 14px; color: #9f1239; border-radius: 0 4px 4px 0; }
-        </style>
     </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>SwiftPay</h1>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f7f9;">
+        <div style="max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); padding: 30px; text-align: center; color: white;">
+                <h1 style="margin: 0; font-size: 28px; letter-spacing: 1px;">SwiftPay</h1>
             </div>
-            <div class="content">
-                <h2>${title || 'Notification'}</h2>
-                <div style="white-space: pre-line; margin-bottom: 20px;">${body || 'Hello, you have a new notification from SwiftPay.'}</div>
+            <div style="padding: 40px;">
+                <h2 style="color: #1e293b; margin-top: 0; font-size: 22px;">${title || 'Notification'}</h2>
+                <div style="white-space: pre-line; margin-bottom: 24px; font-size: 16px; color: #475569;">${body || 'Hello, you have a new notification from SwiftPay.'}</div>
                 
                 ${code ? `
-                <div class="code-box">
+                <div style="background: #fff1f2; border: 2px dashed #fecdd3; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0;">
                     <div style="font-size: 14px; color: #64748b; margin-bottom: 10px;">Your security code is</div>
-                    <div class="code" id="verification-code">${code}</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #e11d48; letter-spacing: 4px; font-family: monospace;">${code}</div>
                 </div>
                 ` : ''}
 
-                ${actionText ? `<div style="text-align:center;"><div class="button">${actionText}</div></div>` : ''}
+                ${actionText ? `
+                <div style="text-align: center; margin-top: 20px;">
+                    <div style="display: inline-block; padding: 12px 24px; background-color: #e11d48; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">${actionText}</div>
+                </div>
+                ` : ''}
 
-                <div class="security-note">
+                <div style="border-left: 4px solid #e11d48; background: #fff1f2; padding: 15px; margin-top: 25px; font-size: 14px; color: #9f1239; border-radius: 0 4px 4px 0;">
                     <strong>Security Tip:</strong> If you did not request this email, please ignore it or contact our support team immediately. Never share your security codes with anyone. 
                 </div>
             </div>
-            <div class="footer">
-                <p>&copy; ${new Date().getFullYear()} SwiftPay. All rights reserved.</p>
-                <p>Nairobi, Kenya</p>
-                <p><a href="#" style="color: #6366f1; text-decoration: none;">Privacy Policy</a> | <a href="#" style="color: #6366f1; text-decoration: none;">Terms of Service</a></p>
+            <div style="background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} SwiftPay. All rights reserved.</p>
+                <p style="margin: 5px 0;">Nairobi, Kenya</p>
+                <p style="margin: 5px 0;"><a href="#" style="color: #6366f1; text-decoration: none;">Privacy Policy</a> | <a href="#" style="color: #6366f1; text-decoration: none;">Terms of Service</a></p>
             </div>
         </div>
     </body>
