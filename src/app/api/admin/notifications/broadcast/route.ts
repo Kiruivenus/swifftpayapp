@@ -28,7 +28,21 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. Audit log
-        await logAdminAction(admin.id, 'BROADCAST_NOTIFICATION', 'SYSTEM', 'GLOBAL', `Broadcasted notification: ${title}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'BROADCAST_NOTIFICATION',
+            targetType: 'SYSTEM',
+            targetId: 'GLOBAL',
+            details: { title, body, type, userCount: userIds.length },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'INFO'
+        });
 
         return NextResponse.json({ success: true, message: `Notification broadcasted to ${userIds.length} users.` });
 

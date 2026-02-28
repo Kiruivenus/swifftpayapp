@@ -33,7 +33,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         });
 
         // Audit log
-        await logAdminAction(admin.id, 'APPROVE_KYC', 'KYC', id, `Approved KYC for user ${request.userId}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'APPROVE_KYC',
+            targetType: 'KYC',
+            targetId: id,
+            details: { userId: request.userId, idNumber: request.idNumber },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'INFO'
+        });
 
         return NextResponse.json({ success: true, message: 'KYC request approved successfully.' });
 

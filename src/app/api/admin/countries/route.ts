@@ -32,7 +32,21 @@ export async function POST(req: NextRequest) {
         });
 
         // Audit log
-        await logAdminAction(admin.id, 'ADD_COUNTRY', 'COUNTRY', country._id, `Added new country: ${country.countryName} (${country.countryCode})`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'ADD_COUNTRY',
+            targetType: 'COUNTRY',
+            targetId: country._id.toString(),
+            details: { countryName: country.countryName, countryCode: country.countryCode },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'INFO'
+        });
 
         return NextResponse.json(country);
 

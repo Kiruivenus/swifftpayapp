@@ -49,7 +49,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
 
         // Audit log
-        await logAdminAction(admin.id, 'APPROVE_WITHDRAWAL', 'TRANSACTION', id, `Approved ${tx.amount} ${tx.currency} withdrawal for user ${tx.userId}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'APPROVE_WITHDRAWAL',
+            targetType: 'TRANSACTION',
+            targetId: id,
+            details: {
+                amount: tx.amount,
+                currency: tx.currency,
+                userId: tx.userId
+            },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'INFO'
+        });
 
         return NextResponse.json({ success: true, message: 'Withdrawal approved successfully.' });
 

@@ -23,7 +23,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         if (!country) return NextResponse.json({ message: 'Country not found' }, { status: 404 });
 
         // Audit log
-        await logAdminAction(admin.id, 'UPDATE_COUNTRY', 'COUNTRY', id, `Updated country configuration for ${country.countryName}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'UPDATE_COUNTRY',
+            targetType: 'COUNTRY',
+            targetId: id,
+            details: { countryName: country.countryName, changes: body },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'INFO'
+        });
 
         return NextResponse.json(country);
 
@@ -43,7 +57,21 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         if (!country) return NextResponse.json({ message: 'Country not found' }, { status: 404 });
 
         // Audit log
-        await logAdminAction(admin.id, 'DELETE_COUNTRY', 'COUNTRY', id, `Deleted country: ${country.countryName}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'DELETE_COUNTRY',
+            targetType: 'COUNTRY',
+            targetId: id,
+            details: { countryName: country.countryName },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'WARNING'
+        });
 
         return NextResponse.json({ success: true, message: 'Country deleted.' });
 

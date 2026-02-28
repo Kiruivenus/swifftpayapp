@@ -37,7 +37,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         });
 
         // Audit log
-        await logAdminAction(admin.id, 'REJECT_KYC', 'KYC', id, `Rejected KYC for user ${request.userId}. Reason: ${reason}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'REJECT_KYC',
+            targetType: 'KYC',
+            targetId: id,
+            details: { userId: request.userId, reason },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'WARNING'
+        });
 
         return NextResponse.json({ success: true, message: 'KYC request rejected.' });
 

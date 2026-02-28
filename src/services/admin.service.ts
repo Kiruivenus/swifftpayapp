@@ -169,6 +169,29 @@ class AdminService {
             body: JSON.stringify({ sessionId }),
         });
     }
+
+    // Audit Logs
+    async getAuditLogs(params: {
+        q?: string;
+        from?: string;
+        to?: string;
+        actionType?: string;
+        severity?: string;
+        page?: number;
+        limit?: number;
+    }) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/audit-logs?${query}`);
+    }
+
+    async getAuditLogDetails(id: string) {
+        return this.fetchJson(`/api/admin/audit-logs/${id}`);
+    }
+
+    getAuditExportUrl(params: any) {
+        const query = new URLSearchParams(params).toString();
+        return `/api/admin/audit-logs/export?${query}`;
+    }
 }
 
 export const adminService = new AdminService();

@@ -45,7 +45,21 @@ export async function POST(req: NextRequest) {
         );
 
         // Audit log
-        await logAdminAction(admin.id, 'UPDATE_RATE', 'RATE', updatedRate._id, `Updated ${pair} rate to ${rate} (Spread: ${spread})`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'UPDATE_RATE',
+            targetType: 'RATE',
+            targetId: updatedRate._id.toString(),
+            details: { pair, rate, spread, trend, percentChange, isEmergencyLocked },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: isEmergencyLocked ? 'WARNING' : 'INFO'
+        });
 
         return NextResponse.json(updatedRate);
 

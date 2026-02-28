@@ -5,6 +5,7 @@ export interface AuthUser {
     id: string;
     email: string;
     role: 'user' | 'super_admin' | 'admin' | 'finance' | 'kyc_reviewer' | 'support';
+    name?: string;
 }
 
 export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {

@@ -95,7 +95,7 @@ export async function POST(request: Request) {
 
         // Create token
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role },
+            { id: user._id, email: user.email, role: user.role, name: user.fullName || user.username || 'User' },
             process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: '1d' }
         );

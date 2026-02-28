@@ -58,7 +58,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
 
         // Audit log
-        await logAdminAction(admin.id, 'REJECT_WITHDRAWAL', 'TRANSACTION', id, `Rejected ${tx.amount} ${tx.currency} withdrawal for user ${tx.userId}. Reason: ${reason}`);
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'REJECT_WITHDRAWAL',
+            targetType: 'TRANSACTION',
+            targetId: id,
+            details: {
+                amount: tx.amount,
+                currency: tx.currency,
+                userId: tx.userId,
+                reason
+            },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'WARNING'
+        });
 
         return NextResponse.json({ success: true, message: 'Withdrawal rejected. Funds returned to user.' });
 

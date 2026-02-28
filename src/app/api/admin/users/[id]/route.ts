@@ -54,11 +54,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         );
 
         // Audit log
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
         if (body.role && body.role !== oldRole) {
-            await logAdminAction(admin.id, 'CHANGE_ROLE', 'USER', id, `Changed role from ${oldRole} to ${body.role}`);
+            await logAdminAction({
+                actorId: admin.id,
+                actorName: admin.name || admin.email,
+                actorRole: admin.role,
+                actionType: 'CHANGE_ROLE',
+                targetType: 'USER',
+                targetId: id,
+                details: { oldRole, newRole: body.role },
+                ipAddress: ip,
+                userAgent: ua
+            });
         }
         if (body.status && body.status !== oldStatus) {
-            await logAdminAction(admin.id, body.status === 'BLOCKED' ? 'BLOCK_USER' : 'UNBLOCK_USER', 'USER', id, `Changed status from ${oldStatus} to ${body.status}`);
+            await logAdminAction({
+                actorId: admin.id,
+                actorName: admin.name || admin.email,
+                actorRole: admin.role,
+                actionType: body.status === 'BLOCKED' ? 'BLOCK_USER' : 'UNBLOCK_USER',
+                targetType: 'USER',
+                targetId: id,
+                details: { oldStatus, newStatus: body.status },
+                ipAddress: ip,
+                userAgent: ua
+            });
         }
 
         return NextResponse.json(updatedUser);
