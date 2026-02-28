@@ -22,10 +22,8 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: {
-                settings,
-                recentBroadcasts
-            }
+            settings,
+            recentBroadcasts
         });
     } catch (err: any) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });

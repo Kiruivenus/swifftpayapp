@@ -34,8 +34,8 @@ export default function NotificationsPage() {
         try {
             setLoading(true);
             const res = await adminService.getCommunicationsOverview();
-            setSettings(res.settings);
-            setRecentBroadcasts(res.recentBroadcasts);
+            setSettings(res.settings || null);
+            setRecentBroadcasts(res.recentBroadcasts || []);
         } catch (err: any) {
             console.error(err);
         } finally {

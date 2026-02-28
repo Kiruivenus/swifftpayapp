@@ -30,14 +30,12 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            data: {
-                broadcasts,
-                pagination: {
-                    page,
-                    limit,
-                    total,
-                    pages: Math.ceil(total / limit)
-                }
+            broadcasts,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
             }
         });
     } catch (err: any) {
@@ -141,7 +139,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        return NextResponse.json({ success: true, data: broadcast });
+        return NextResponse.json({ success: true, ...broadcast.toObject() });
     } catch (err: any) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
