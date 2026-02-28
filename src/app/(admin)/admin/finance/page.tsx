@@ -223,13 +223,13 @@ export default function FinancePage() {
                                 {rates.map((rate) => (
                                     <div key={rate._id} className="flex items-center justify-between p-3 bg-slate-950/40 rounded-xl border border-slate-800">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs uppercase">{rate.pair.split('-')[1]}</div>
-                                            <span className="text-xs font-bold text-slate-300">1 {rate.pair.split('-')[1]}</span>
+                                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs uppercase">{rate.quoteCurrency}</div>
+                                            <span className="text-xs font-bold text-slate-300">1 {rate.quoteCurrency}</span>
                                         </div>
                                         <span className="text-xs font-bold text-slate-500">=</span>
                                         <div className="flex items-center gap-2 text-right">
                                             <span className="text-xs font-bold text-white">{rate.rate}</span>
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase">{rate.pair.split('-')[0]}</span>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">{rate.baseCurrency}</span>
                                         </div>
                                     </div>
                                 ))}
