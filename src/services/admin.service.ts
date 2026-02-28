@@ -83,6 +83,15 @@ class AdminService {
         });
     }
 
+    async getUserSummary(id: string) {
+        return this.fetchJson(`/api/admin/users/${id}/summary`);
+    }
+
+    async getUserTransactions(id: string, params: any = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/users/${id}/transactions?${query}`);
+    }
+
     // KYC
     async getKycRequests(params: { status?: string; page?: number; limit?: number }) {
         const query = new URLSearchParams(params as any).toString();
@@ -100,13 +109,38 @@ class AdminService {
         });
     }
 
-    // Finance
-    async getTransactions(params: { search?: string; type?: string; status?: string; page?: number; limit?: number }) {
+    // Finance (Phase 11)
+    async getTransactions(params: {
+        q?: string;
+        type?: string;
+        status?: string;
+        currency?: string;
+        from?: string;
+        to?: string;
+        page?: number;
+        limit?: number
+    }) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/transactions?${query}`);
     }
 
-    async getWithdrawals(params: { status?: string; page?: number; limit?: number } = {}) {
+    async getTransactionDetails(id: string) {
+        return this.fetchJson(`/api/admin/transactions/${id}`);
+    }
+
+    async failTransaction(id: string, reason: string) {
+        return this.fetchJson(`/api/admin/transactions/${id}/fail`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+    }
+
+    async getFinanceMetrics(params: { from?: string; to?: string } = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/finance/metrics?${query}`);
+    }
+
+    async getWithdrawals(params: { status?: string; currency?: string; page?: number; limit?: number } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/withdrawals?${query}`);
     }

@@ -1,64 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
-import User from '@/models/User';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 
-export async function GET(req: NextRequest) {
-    const { error } = await validateAdmin(req, PERMISSIONS.VIEW_TRANSACTIONS);
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const { error } = await validateAdmin(req, PERMISSIONS.MANAGE_USERS);
     if (error) return error;
 
     const { searchParams } = new URL(req.url);
-    const q = searchParams.get('q');
     const type = searchParams.get('type');
     const status = searchParams.get('status');
     const currency = searchParams.get('currency');
     const from = searchParams.get('from');
     const to = searchParams.get('to');
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '50');
     const skip = (page - 1) * limit;
 
     try {
         await dbConnect();
 
-        const query: any = {};
+        const query: any = { userId: id };
 
-        // 1. Unified Search (q)
-        if (q) {
-            const searchRegex = new RegExp(q, 'i');
-
-            // Find users matching search
-            const users = await User.find({
-                $or: [
-                    { username: searchRegex },
-                    { email: searchRegex },
-                    { fullName: searchRegex },
-                    { phone: searchRegex }
-                ]
-            }, '_id');
-            const userIds = users.map(u => u._id.toString());
-
-            query.$or = [
-                { userId: { $in: userIds } },
-                { mpesaReceiptNumber: searchRegex },
-                { toAddress: searchRegex },
-                { checkoutRequestID: searchRegex }
-            ];
-
-            // If it's a valid MongoDB ID, search by ID too
-            if (q.match(/^[0-9a-fA-F]{24}$/)) {
-                query.$or.push({ _id: q });
-            }
-        }
-
-        // 2. Filters
         if (type) query.type = type;
         if (status) query.status = status;
         if (currency) query.currency = currency;
 
-        // 3. Date Range
         if (from || to) {
             query.createdAt = {};
             if (from) query.createdAt.$gte = new Date(from);
@@ -67,7 +36,6 @@ export async function GET(req: NextRequest) {
 
         const [transactions, total] = await Promise.all([
             Transaction.find(query)
-                .populate('userId', 'username email fullName profilePhotoUrl phone')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
@@ -75,6 +43,7 @@ export async function GET(req: NextRequest) {
         ]);
 
         return NextResponse.json({
+            success: true,
             items: transactions,
             total,
             page,

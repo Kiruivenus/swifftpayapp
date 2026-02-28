@@ -49,6 +49,12 @@ const TransactionSchema = new Schema({
         type: Date,
         default: Date.now,
     },
+    processedAt: Date,
+    processedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    rejectionReason: String,
 });
 
 const Transaction = models.Transaction || model('Transaction', TransactionSchema);
