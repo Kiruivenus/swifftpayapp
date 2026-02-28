@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import BlockedUser from '@/models/BlockedUser';
 import Otp from '@/models/Otp';
-import Country from '@/models/Country';
+import Region from '@/models/Region';
 import { sendEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
@@ -24,18 +24,18 @@ export async function POST(request: Request) {
         const emailNormalized = email.trim().toLowerCase();
         const usernameNormalized = username.trim().toLowerCase();
 
-        // 1. Validate Country and Currency
-        const country = await Country.findOne({ countryCode, isActive: true });
-        if (!country) {
-            return NextResponse.json({ message: 'Selected country is not supported or inactive' }, { status: 400 });
+        // 1. Validate Region and Currency
+        const region = await Region.findOne({ countryCode, enabled: true });
+        if (!region) {
+            return NextResponse.json({ message: 'Selected region is not supported or maintenance is active' }, { status: 400 });
         }
 
-        if (!country.allowedCurrencies.includes(currency)) {
-            return NextResponse.json({ message: `Currency ${currency} is not allowed for ${country.countryName}` }, { status: 400 });
+        if (region.currencyCode !== currency && currency !== 'USDT') {
+            return NextResponse.json({ message: `Currency ${currency} is not supported for ${region.countryName}` }, { status: 400 });
         }
 
         // 2. Format Phone to E.164
-        const phoneE164 = country.phoneCode + phone.replace(/^0+/, '');
+        const phoneE164 = region.phonePrefix + phone.replace(/^0+/, '');
 
         // 3. Check for existing users using normalized fields
         const existingEmail = await User.findOne({ emailNormalized });

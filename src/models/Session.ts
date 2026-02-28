@@ -2,34 +2,61 @@ import mongoose, { Schema, model, models } from 'mongoose';
 
 const SessionSchema = new Schema({
     userId: {
-        type: String,
+        type: Schema.Types.ObjectId,
+        ref: 'User',
         required: true,
         index: true,
     },
-    token: {
+    sessionType: {
+        type: String,
+        enum: ['web', 'mobile'],
+        required: true,
+        index: true,
+    },
+    refreshTokenHash: {
         type: String,
         required: true,
-        unique: true,
     },
-    refreshTokenHash: String,
+    status: {
+        type: String,
+        enum: ['active', 'revoked', 'expired'],
+        default: 'active',
+        index: true,
+    },
     deviceId: {
         type: String,
         index: true,
     },
     deviceName: String,
     platform: String,
-    osVersion: String,
+    browser: String,
     appVersion: String,
-    ipAddress: String,
-    isActive: {
-        type: Boolean,
-        default: true
+    ip: String,
+    geo: {
+        country: String,
+        city: String,
+        lat: Number,
+        lon: Number
     },
-    lastActive: {
+    isTrusted: {
+        type: Boolean,
+        default: false
+    },
+    trustedAt: Date,
+    trustedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'Admin'
+    },
+    lastSeenAt: {
         type: Date,
         default: Date.now,
+        index: true
     },
-    revokedAt: Date,
+    expiresAt: {
+        type: Date,
+        required: true,
+        index: { expires: 0 } // TTL index
+    },
     createdAt: {
         type: Date,
         default: Date.now,

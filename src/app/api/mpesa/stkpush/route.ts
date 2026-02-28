@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
+import { checkMaintenance } from '@/lib/maintenance';
+import PlatformSettings from '@/models/PlatformSettings';
+import { decrypt } from '@/lib/encryption';
 
-const CONSUMER_KEY = process.env.MPESA_CONSUMER_KEY;
-const CONSUMER_SECRET = process.env.MPESA_CONSUMER_SECRET;
-const SHORTCODE = process.env.MPESA_SHORTCODE;
-const PASSKEY = process.env.MPESA_PASSKEY;
-const CALLBACK_URL = process.env.MPESA_CALLBACK_URL;
-
-async function getMpesaToken() {
-    const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString('base64');
+async function getMpesaToken(key: string, secret: string) {
+    const auth = Buffer.from(`${key}:${secret}`).toString('base64');
     try {
         const response = await fetch(
             'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
@@ -31,9 +28,24 @@ async function getMpesaToken() {
 export async function POST(req: Request) {
     try {
         await dbConnect();
+
+        // Check Maintenance Mode
+        const maintenance = await checkMaintenance();
+        if (maintenance.isMaintenance) return maintenance.response!;
+
         const { amount, phoneNumber, userId } = await req.json();
 
-        const token = await getMpesaToken();
+        // Fetch Real Settings from DB
+        const settings = await (PlatformSettings as any).getSettings();
+
+        // Use DB settings if encrypted keys exist, otherwise fallback to environment
+        const CONSUMER_KEY = settings.mpesaConsumerKey ? decrypt(settings.mpesaConsumerKey) : process.env.MPESA_CONSUMER_KEY;
+        const CONSUMER_SECRET = settings.mpesaConsumerSecret ? decrypt(settings.mpesaConsumerSecret) : process.env.MPESA_CONSUMER_SECRET;
+        const SHORTCODE = settings.mpesaShortCode || process.env.MPESA_SHORTCODE;
+        const PASSKEY = settings.mpesaPasskey ? decrypt(settings.mpesaPasskey) : process.env.MPESA_PASSKEY;
+        const CALLBACK_URL = settings.callbackBaseUrl || process.env.MPESA_CALLBACK_URL;
+
+        const token = await getMpesaToken(CONSUMER_KEY!, CONSUMER_SECRET!);
         const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
         const password = Buffer.from(`${SHORTCODE}${PASSKEY}${timestamp}`).toString('base64');
 

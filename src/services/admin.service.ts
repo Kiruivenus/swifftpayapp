@@ -126,27 +126,42 @@ class AdminService {
         });
     }
 
-    // Rates & Settings
-    async getRates() {
-        return this.fetchJson('/api/admin/rates');
+    // Rates & Localization (Phase 7)
+    async getRatesConfig() {
+        return this.fetchJson('/api/admin/rates/config');
     }
 
-    async updateRates(data: any) {
-        return this.fetchJson('/api/admin/rates', {
+    async updateRatePair(data: { baseCurrency: string; quoteCurrency: string; rate: number; source?: string }) {
+        return this.fetchJson('/api/admin/rates/pairs', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     }
 
-    async getCountries() {
-        return this.fetchJson('/api/admin/countries');
-    }
-
-    async updateCountry(id: string, data: any) {
-        return this.fetchJson(`/api/admin/countries/${id}`, {
-            method: 'PATCH',
+    async updateFeesLimits(data: any) {
+        return this.fetchJson('/api/admin/rates/fees-limits', {
+            method: 'PUT',
             body: JSON.stringify(data),
         });
+    }
+
+    async updateRegion(countryCode: string, data: any) {
+        return this.fetchJson(`/api/admin/rates/regions/${countryCode}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async toggleConversionFreeze(frozen: boolean, reason: string) {
+        return this.fetchJson('/api/admin/rates/freeze', {
+            method: 'POST',
+            body: JSON.stringify({ frozen, reason }),
+        });
+    }
+
+    async getRatesHistory(params: { type?: string; page?: number; limit?: number } = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/rates/history?${query}`);
     }
 
     // Notifications
@@ -154,19 +169,6 @@ class AdminService {
         return this.fetchJson('/api/admin/notifications/broadcast', {
             method: 'POST',
             body: JSON.stringify(data),
-        });
-    }
-
-    // Sessions
-    async getSessions(userId?: string) {
-        const endpoint = userId ? `/api/admin/sessions?userId=${userId}` : '/api/admin/sessions';
-        return this.fetchJson(endpoint);
-    }
-
-    async revokeSession(sessionId: string) {
-        return this.fetchJson('/api/admin/sessions/logout', {
-            method: 'POST',
-            body: JSON.stringify({ sessionId }),
         });
     }
 
@@ -191,6 +193,70 @@ class AdminService {
     getAuditExportUrl(params: any) {
         const query = new URLSearchParams(params).toString();
         return `/api/admin/audit-logs/export?${query}`;
+    }
+
+    // Platform Settings
+    async getSettings() {
+        return this.fetchJson('/api/admin/settings');
+    }
+
+    async updateGeneralSettings(data: any) {
+        return this.fetchJson('/api/admin/settings/general', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async updateIntegrationKeys(data: any) {
+        return this.fetchJson('/api/admin/settings/integrations', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getSystemHealth() {
+        return this.fetchJson('/api/admin/health');
+    }
+
+    async uploadBrandAsset(type: 'logo' | 'favicon', image: string) {
+        return this.fetchJson('/api/admin/settings/assets', {
+            method: 'POST',
+            body: JSON.stringify({ type, image }),
+        });
+    }
+
+    // Security & Sessions (Phase 8)
+    async getSessionsOverview(params: { userId?: string; q?: string; type?: string; status?: string } = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/sessions/overview?${query}`);
+    }
+
+    async revokeSession(sessionId: string) {
+        return this.fetchJson('/api/admin/sessions/revoke', {
+            method: 'POST',
+            body: JSON.stringify({ sessionId }),
+        });
+    }
+
+    async revokeAllSessions(userId?: string) {
+        return this.fetchJson('/api/admin/sessions/revoke-all', {
+            method: 'POST',
+            body: JSON.stringify({ userId }),
+        });
+    }
+
+    async trustDevice(sessionId: string, trusted: boolean) {
+        return this.fetchJson('/api/admin/sessions/trust', {
+            method: 'POST',
+            body: JSON.stringify({ sessionId, trusted }),
+        });
+    }
+
+    async updateSecurityPolicies(data: any) {
+        return this.fetchJson('/api/admin/security-policies', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
     }
 }
 

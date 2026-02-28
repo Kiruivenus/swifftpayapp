@@ -20,6 +20,8 @@ export const PERMISSIONS = {
     VIEW_TRANSACTIONS: 'view_transactions',
     AUDIT_LOGS: 'audit_logs',
     BROADCAST_NOTIFICATIONS: 'broadcast_notifications',
+    VIEW_SESSIONS: 'view_sessions',
+    MANAGE_SESSIONS: 'manage_sessions',
 };
 
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
@@ -34,6 +36,8 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
         PERMISSIONS.MANAGE_USERS,
         PERMISSIONS.VIEW_TRANSACTIONS,
         PERMISSIONS.BROADCAST_NOTIFICATIONS,
+        PERMISSIONS.VIEW_SESSIONS,
+        PERMISSIONS.MANAGE_SESSIONS,
     ],
     finance: [
         PERMISSIONS.APPROVE_WITHDRAWALS,
