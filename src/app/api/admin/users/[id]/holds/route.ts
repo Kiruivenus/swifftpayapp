@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // 5. Audit
         await logAdminAction({
             actorId: admin.id,
-            actorName: admin.username,
+            actorName: admin.name || admin.email,
             actorRole: admin.role,
             actionType: 'FREEZE_FUNDS',
             targetType: 'USER',

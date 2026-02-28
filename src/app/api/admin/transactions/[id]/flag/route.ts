@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Audit
         await logAdminAction({
             actorId: admin.id,
-            actorName: admin.username,
+            actorName: admin.name || admin.email,
             actorRole: admin.role,
             actionType: 'FLAG_TRANSACTION',
             targetType: 'TRANSACTION',
