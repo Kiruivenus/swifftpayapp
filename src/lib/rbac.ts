@@ -1,7 +1,8 @@
-export type Role = 'user' | 'admin' | 'finance' | 'kyc_reviewer' | 'support';
+export type Role = 'user' | 'super_admin' | 'admin' | 'finance' | 'kyc_reviewer' | 'support';
 
 export const ROLES: Record<string, Role> = {
     USER: 'user',
+    SUPER_ADMIN: 'super_admin',
     ADMIN: 'admin',
     FINANCE: 'finance',
     KYC_REVIEWER: 'kyc_reviewer',
@@ -9,7 +10,7 @@ export const ROLES: Record<string, Role> = {
 };
 
 export const PERMISSIONS = {
-    MANAGE_ADMINS: 'manage_admins',
+    MANAGE_ADMINS: 'manage_admins', // Only SUPER_ADMIN
     PLATFORM_SETTINGS: 'platform_settings',
     APPROVE_WITHDRAWALS: 'approve_withdrawals',
     VIEW_BALANCES: 'view_balances',
@@ -18,11 +19,12 @@ export const PERMISSIONS = {
     MANAGE_USERS: 'manage_users',
     VIEW_TRANSACTIONS: 'view_transactions',
     AUDIT_LOGS: 'audit_logs',
+    BROADCAST_NOTIFICATIONS: 'broadcast_notifications',
 };
 
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
+    super_admin: Object.values(PERMISSIONS),
     admin: [
-        PERMISSIONS.MANAGE_ADMINS,
         PERMISSIONS.PLATFORM_SETTINGS,
         PERMISSIONS.AUDIT_LOGS,
         PERMISSIONS.APPROVE_WITHDRAWALS,
@@ -31,6 +33,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
         PERMISSIONS.REVIEW_KYC,
         PERMISSIONS.MANAGE_USERS,
         PERMISSIONS.VIEW_TRANSACTIONS,
+        PERMISSIONS.BROADCAST_NOTIFICATIONS,
     ],
     finance: [
         PERMISSIONS.APPROVE_WITHDRAWALS,
@@ -50,9 +53,11 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
 };
 
 export function hasPermission(role: Role, permission: string): boolean {
-    return ROLE_PERMISSIONS[role]?.includes(permission) || false;
+    const roleKey = role?.toLowerCase() as Role;
+    return ROLE_PERMISSIONS[roleKey]?.includes(permission) || false;
 }
 
 export function isAdmin(role: Role): boolean {
-    return ['admin', 'finance', 'kyc_reviewer', 'support'].includes(role);
+    const roleKey = role?.toLowerCase();
+    return ['super_admin', 'admin', 'finance', 'kyc_reviewer', 'support'].includes(roleKey);
 }

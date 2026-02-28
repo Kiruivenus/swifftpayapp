@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import {
     Bell,
     Send,
@@ -11,10 +13,39 @@ import {
     Filter,
     CheckCircle2,
     AlertCircle,
-    Megaphone
+    Megaphone,
+    Loader2
 } from 'lucide-react';
+import { adminService } from '@/services/admin.service';
 
 export default function NotificationsPage() {
+    const [title, setTitle] = useState('');
+    const [body, setBody] = useState('');
+    const [type, setType] = useState('push');
+    const [target, setTarget] = useState('all');
+    const [sending, setSending] = useState(false);
+
+    const handleSend = async () => {
+        if (!title || !body) return alert("Please fill in both title and message");
+        if (!confirm(`Broadcast this message to ${target} users via ${type}?`)) return;
+
+        try {
+            setSending(true);
+            await adminService.broadcastNotification({
+                title,
+                body,
+                type: type.toUpperCase()
+            });
+            alert("Broadcast sent successfully!");
+            setTitle('');
+            setBody('');
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setSending(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
@@ -22,12 +53,6 @@ export default function NotificationsPage() {
                 <div>
                     <h2 className="text-3xl font-bold text-white tracking-tight">Communications</h2>
                     <p className="text-slate-400 mt-1">Manage announcements, push notifications, and automated alerts.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20">
-                        <Plus size={18} />
-                        New Campaign
-                    </button>
                 </div>
             </div>
 
@@ -46,9 +71,9 @@ export default function NotificationsPage() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Target Audience</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <TargetOption icon={<Users size={16} />} label="All Users" active={true} />
-                                    <TargetOption icon={<Target size={16} />} label="Verified Only" />
-                                    <TargetOption icon={<AlertCircle size={16} />} label="Unverified Only" />
+                                    <TargetOption icon={<Users size={16} />} label="All Users" active={target === 'all'} onClick={() => setTarget('all')} />
+                                    <TargetOption icon={<Target size={16} />} label="Verified Only" active={target === 'verified'} onClick={() => setTarget('verified')} />
+                                    <TargetOption icon={<AlertCircle size={16} />} label="Unverified Only" active={target === 'unverified'} onClick={() => setTarget('unverified')} />
                                 </div>
                             </div>
 
@@ -56,9 +81,9 @@ export default function NotificationsPage() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Delivery Channels</label>
                                 <div className="flex flex-wrap gap-4">
-                                    <ChannelToggle icon={<Smartphone size={16} />} label="Push Notification" active={true} />
-                                    <ChannelToggle icon={<Mail size={16} />} label="Email" />
-                                    <ChannelToggle icon={<Bell size={16} />} label="In-App Banner" />
+                                    <ChannelToggle icon={<Smartphone size={16} />} label="Push Notification" active={type === 'push'} onClick={() => setType('push')} />
+                                    <ChannelToggle icon={<Mail size={16} />} label="Email" active={type === 'email'} onClick={() => setType('email')} />
+                                    <ChannelToggle icon={<Bell size={16} />} label="In-App Banner" active={type === 'in-app'} onClick={() => setType('in-app')} />
                                 </div>
                             </div>
 
@@ -68,6 +93,8 @@ export default function NotificationsPage() {
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Notification Title</label>
                                     <input
                                         type="text"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
                                         placeholder="e.g. Scheduled Maintenance"
                                         className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500/50"
                                     />
@@ -76,6 +103,8 @@ export default function NotificationsPage() {
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Message Body</label>
                                     <textarea
                                         rows={4}
+                                        value={body}
+                                        onChange={(e) => setBody(e.target.value)}
                                         placeholder="Type your message here..."
                                         className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500/50 resize-none"
                                     />
@@ -85,10 +114,14 @@ export default function NotificationsPage() {
                             <div className="flex items-center justify-between pt-4">
                                 <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700">
                                     <Target size={14} className="text-indigo-400" />
-                                    Est. Reach: 1,284 Users
+                                    Est. Reach: {target === 'all' ? '1,280' : target === 'verified' ? '840' : '440'} Users
                                 </div>
-                                <button className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30">
-                                    <Send size={18} />
+                                <button
+                                    onClick={handleSend}
+                                    disabled={sending}
+                                    className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50"
+                                >
+                                    {sending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
                                     Send Notification Now
                                 </button>
                             </div>
@@ -100,32 +133,22 @@ export default function NotificationsPage() {
                         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-white flex items-center gap-3">
                                 <History className="text-slate-400" size={20} />
-                                Sent Messages
+                                Recent Broadcasts
                             </h3>
-                            <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">
-                                View Complete History
-                            </button>
                         </div>
                         <div className="divide-y divide-slate-800">
                             <HistoryItem
-                                title="System Maintenance Complete"
-                                date="March 1, 2024 at 2:30 PM"
-                                reach="1,284"
-                                clicks="842"
+                                title="Platform Update v2.1"
+                                date="Today at 10:00 AM"
+                                reach="1,280"
+                                clicks="940"
                                 status="delivered"
                             />
                             <HistoryItem
-                                title="Update Your App for Better Security"
-                                date="Feb 28, 2024 at 10:15 AM"
-                                reach="956"
-                                clicks="124"
-                                status="delivered"
-                            />
-                            <HistoryItem
-                                title="Welcome to SwiftPay v2.0"
-                                date="Feb 25, 2024 at 9:00 AM"
-                                reach="840"
-                                clicks="620"
+                                title="New Verification Requirements"
+                                date="Yesterday at 3:45 PM"
+                                reach="1,240"
+                                clicks="420"
                                 status="delivered"
                             />
                         </div>
@@ -135,19 +158,17 @@ export default function NotificationsPage() {
                 {/* Right: Automated Triggers & Templates */}
                 <div className="space-y-6">
                     <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 backdrop-blur-sm">
-                        <h3 className="text-lg font-bold text-white mb-6">Triggered Alerts</h3>
+                        <h3 className="text-lg font-bold text-white mb-6">Automated Alerts</h3>
                         <div className="space-y-4">
                             <TriggerItem label="New Login Detected" active={true} />
                             <TriggerItem label="KYC Status Update" active={true} />
                             <TriggerItem label="Deposit Successful" active={true} />
                             <TriggerItem label="Withdrawal Processed" active={true} />
-                            <TriggerItem label="Large Transfer (>100k)" active={false} />
                         </div>
                     </div>
 
                     <div className="bg-gradient-to-br from-indigo-900/20 to-blue-900/20 border border-indigo-500/20 rounded-3xl p-6 backdrop-blur-sm">
                         <h4 className="text-white font-bold mb-3 flex items-center gap-2">
-                            <ShieldAlert size={18} className="text-amber-400" />
                             Compliance Notice
                         </h4>
                         <p className="text-xs text-slate-400 leading-relaxed">
@@ -160,30 +181,39 @@ export default function NotificationsPage() {
     );
 }
 
-function TargetOption({ icon, label, active }: any) {
+function TargetOption({ icon, label, active, onClick }: any) {
     return (
-        <button className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-xs font-bold ${active ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700'}`}>
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-xs font-bold ${active ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+        >
             {icon}
             {label}
         </button>
     );
 }
 
-function ChannelToggle({ icon, label, active }: any) {
+function ChannelToggle({ icon, label, active, onClick }: any) {
     return (
         <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${active ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
+            <button
+                onClick={onClick}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${active ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-slate-900 border-slate-800 text-slate-600'}`}
+            >
                 {icon}
-            </div>
+            </button>
             <span className={`text-xs font-bold ${active ? 'text-slate-200' : 'text-slate-500'}`}>{label}</span>
-            <button className={`w-8 h-4 rounded-full relative transition-all ${active ? 'bg-indigo-600' : 'bg-slate-800'}`}>
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${active ? 'left-4.5' : 'left-0.5'}`} />
+            <button
+                onClick={onClick}
+                className={`w-10 h-5 rounded-full relative transition-all shadow-inner ${active ? 'bg-indigo-600' : 'bg-slate-800'}`}
+            >
+                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${active ? 'left-6' : 'left-1'}`} />
             </button>
         </div>
     );
 }
 
-function HistoryItem({ title, date, reach, clicks, status }: any) {
+function HistoryItem({ title, date, reach, clicks }: any) {
     return (
         <div className="p-6 group hover:bg-slate-800/10 transition-colors">
             <div className="flex justify-between items-start mb-2">
@@ -203,11 +233,6 @@ function HistoryItem({ title, date, reach, clicks, status }: any) {
                     <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Clicks</p>
                     <p className="text-sm font-bold text-slate-300">{clicks}</p>
                 </div>
-                <div className="w-px h-6 bg-slate-800" />
-                <div>
-                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Engagement</p>
-                    <p className="text-sm font-bold text-emerald-400">{Math.round((parseInt(clicks) / parseInt(reach)) * 100)}%</p>
-                </div>
             </div>
         </div>
     );
@@ -217,50 +242,9 @@ function TriggerItem({ label, active }: any) {
     return (
         <div className="flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-950/20">
             <span className="text-xs font-bold text-slate-300">{label}</span>
-            <div className={`w-8 h-4 rounded-full relative transition-all cursor-pointer ${active ? 'bg-emerald-600' : 'bg-slate-800'}`}>
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${active ? 'left-4.5' : 'left-0.5'}`} />
+            <div className={`w-10 h-5 rounded-full relative transition-all cursor-pointer shadow-inner ${active ? 'bg-emerald-600' : 'bg-slate-800'}`}>
+                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${active ? 'left-6' : 'left-1'}`} />
             </div>
         </div>
-    );
-}
-
-function Plus({ size, className }: any) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-        </svg>
-    );
-}
-
-function ShieldAlert({ size, className }: any) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-        >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-            <path d="M12 8v4" />
-            <path d="M12 16h.01" />
-        </svg>
     );
 }

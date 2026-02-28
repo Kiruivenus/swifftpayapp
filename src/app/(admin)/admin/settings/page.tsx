@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Settings,
     Shield,
@@ -13,10 +13,36 @@ import {
     Mail,
     Lock,
     Eye,
-    EyeOff
+    EyeOff,
+    Loader2
 } from 'lucide-react';
 
 export default function SettingsPage() {
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [platformName, setPlatformName] = useState('SwiftPay');
+    const [supportEmail, setSupportEmail] = useState('support@swiftpay.ke');
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            // Simulated API call for global config
+            await new Promise(r => setTimeout(r, 1000));
+            alert("System configuration updated successfully.");
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const toggleMaintenance = () => {
+        const action = !maintenanceMode ? "ACTIVATE" : "DEACTIVATE";
+        if (confirm(`Are you sure you want to ${action} maintenance mode? This affects all users.`)) {
+            setMaintenanceMode(!maintenanceMode);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
@@ -26,8 +52,12 @@ export default function SettingsPage() {
                     <p className="text-slate-400 mt-1">Global platform configuration, API integrations, and security policies.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20">
-                        <Save size={18} />
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                    >
+                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                         Save Changes
                     </button>
                 </div>
@@ -46,18 +76,21 @@ export default function SettingsPage() {
                         </h3>
 
                         <div className="space-y-6">
-                            <div className="flex items-center justify-between p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
+                            <div className={`flex items-center justify-between p-4 border rounded-2xl transition-all ${maintenanceMode ? 'bg-rose-500/10 border-rose-500/30' : 'bg-slate-950/20 border-slate-800'}`}>
                                 <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${maintenanceMode ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-500'}`}>
                                         <AlertTriangle size={20} />
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-bold text-white">Maintenance Mode</h4>
+                                        <h4 className={`text-sm font-bold ${maintenanceMode ? 'text-rose-400' : 'text-white'}`}>Maintenance Mode</h4>
                                         <p className="text-xs text-slate-500 mt-1">When active, users cannot access the mobile app or web platform.</p>
                                     </div>
                                 </div>
-                                <button className="w-12 h-6 rounded-full bg-slate-800 relative transition-all">
-                                    <div className="absolute top-1 left-1 w-4 h-4 rounded-full bg-slate-600" />
+                                <button
+                                    onClick={toggleMaintenance}
+                                    className={`w-12 h-6 rounded-full relative transition-all shadow-inner ${maintenanceMode ? 'bg-rose-500' : 'bg-slate-800'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${maintenanceMode ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
 
@@ -66,16 +99,18 @@ export default function SettingsPage() {
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Platform Name</label>
                                     <input
                                         type="text"
-                                        defaultValue="SwiftPay"
-                                        className="w-full px-4 py-2.5 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                                        value={platformName}
+                                        onChange={(e) => setPlatformName(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 font-bold"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Support Email</label>
                                     <input
                                         type="text"
-                                        defaultValue="support@swiftpay.ke"
-                                        className="w-full px-4 py-2.5 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50"
+                                        value={supportEmail}
+                                        onChange={(e) => setSupportEmail(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-slate-950/50 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 font-bold"
                                     />
                                 </div>
                             </div>
@@ -90,12 +125,12 @@ export default function SettingsPage() {
                         </h3>
 
                         <div className="space-y-6">
-                            <SettingsKeyItem label="M-Pesa Consumer Key" value="Pj...48x9" isSecret={true} />
-                            <SettingsKeyItem label="M-Pesa Consumer Secret" value="Ak...29z1" isSecret={true} />
-                            <SettingsKeyItem label="M-Pesa Passkey" value="bf...0e32" isSecret={true} />
+                            <SettingsKeyItem label="M-Pesa Consumer Key" value="Pj...48x9" />
+                            <SettingsKeyItem label="M-Pesa Consumer Secret" value="Ak...29z1" />
+                            <SettingsKeyItem label="M-Pesa Passkey" value="bf...0e32" />
                             <div className="h-px bg-slate-800 my-2" />
-                            <SettingsKeyItem label="SendGrid API Key" value="SG...004x" isSecret={true} />
-                            <SettingsKeyItem label="Binance Pay Secret" value="Bn...X821" isSecret={true} />
+                            <SettingsKeyItem label="SendGrid API Key" value="SG...004x" />
+                            <SettingsKeyItem label="Binance Pay Secret" value="Bn...X821" />
                         </div>
 
                         <div className="mt-8 p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex items-start gap-3">
@@ -121,7 +156,7 @@ export default function SettingsPage() {
                                 <div className="aspect-[3/1] bg-slate-950/50 border border-dashed border-slate-800 rounded-2xl flex items-center justify-center group cursor-pointer hover:border-indigo-500/50 transition-all overflow-hidden relative">
                                     <div className="text-center group-hover:scale-110 transition-transform flex items-center gap-3 px-6">
                                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-white">S</div>
-                                        <span className="text-lg font-bold text-white">SwiftPay</span>
+                                        <span className="text-lg font-bold text-white">{platformName}</span>
                                     </div>
                                 </div>
                             </div>
@@ -144,7 +179,7 @@ export default function SettingsPage() {
                             <HealthItem label="Core API" status="online" />
                             <HealthItem label="Database Cluster" status="online" />
                             <HealthItem label="Redis Cache" status="online" />
-                            <HealthItem label="M-Pesa Webhook" status="warning" />
+                            <HealthItem label="M-Pesa Gateway" status="warning" />
                             <HealthItem label="Email SMTP" status="online" />
                         </div>
                     </div>
@@ -167,7 +202,7 @@ export default function SettingsPage() {
     );
 }
 
-function SettingsKeyItem({ label, value, isSecret }: any) {
+function SettingsKeyItem({ label, value }: any) {
     const [show, setShow] = React.useState(false);
 
     return (

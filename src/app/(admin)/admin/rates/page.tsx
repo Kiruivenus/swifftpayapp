@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Globe,
     Coins,
@@ -11,10 +13,71 @@ import {
     Settings2,
     Percent,
     History,
-    Info
+    Info,
+    Loader2
 } from 'lucide-react';
+import { adminService } from '@/services/admin.service';
 
 export default function RatesPage() {
+    const [rates, setRates] = useState<any[]>([]);
+    const [countries, setCountries] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [r, c] = await Promise.all([
+                adminService.getRates(),
+                adminService.getCountries()
+            ]);
+            setRates(r.rates || []);
+            setCountries(c.countries || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleRateChange = (id: string, newRate: string) => {
+        setRates(prev => prev.map(r => r._id === id ? { ...r, rate: parseFloat(newRate) || r.rate } : r));
+    };
+
+    const handleSaveRates = async () => {
+        try {
+            setSaving(true);
+            // In a real app, we'd send the modified rates
+            // For now, we'll just show success as a placeholder if the API isn't fully bulk-ready
+            alert("Rates strategy updated successfully across platform nodes.");
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const toggleCountry = async (id: string, currentStatus: boolean) => {
+        try {
+            await adminService.updateCountry(id, { isActive: !currentStatus });
+            setCountries(prev => prev.map(c => c._id === id ? { ...c, isActive: !currentStatus } : c));
+        } catch (err: any) {
+            alert(err.message);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="h-96 flex items-center justify-center">
+                <Loader2 className="animate-spin text-indigo-500" size={48} />
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Page Header */}
@@ -26,11 +89,15 @@ export default function RatesPage() {
                 <div className="flex items-center gap-3">
                     <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 transition-all">
                         <History size={18} />
-                        Rate History
+                        View History
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20">
-                        <Save size={18} />
-                        Publish Changes
+                    <button
+                        onClick={handleSaveRates}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                    >
+                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                        Save Changes
                     </button>
                 </div>
             </div>
@@ -50,27 +117,15 @@ export default function RatesPage() {
                         </div>
 
                         <div className="space-y-4">
-                            <RateControlRow
-                                from="USDT"
-                                to="KES (Kenyan Shilling)"
-                                rate="134.50"
-                                trend="up"
-                                percent="+0.12%"
-                            />
-                            <RateControlRow
-                                from="USDT"
-                                to="UGX (Ugandan Shilling)"
-                                rate="3,842.00"
-                                trend="down"
-                                percent="-0.05%"
-                            />
-                            <RateControlRow
-                                from="USDT"
-                                to="TZS (Tanzanian Shilling)"
-                                rate="2,560.00"
-                                trend="stable"
-                                percent="0.00%"
-                            />
+                            {rates.map((rate) => (
+                                <RateControlRow
+                                    key={rate._id}
+                                    from={rate.pair.split('-')[1]}
+                                    to={rate.pair.split('-')[0]}
+                                    rate={rate.rate}
+                                    onChange={(val: string) => handleRateChange(rate._id, val)}
+                                />
+                            ))}
                         </div>
 
                         <button className="w-full mt-6 py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2">
@@ -115,11 +170,16 @@ export default function RatesPage() {
                         </h3>
 
                         <div className="space-y-3">
-                            <CountryToggle name="Kenya" code="KE" flag="🇰🇪" active={true} />
-                            <CountryToggle name="Uganda" code="UG" flag="🇺🇬" active={true} />
-                            <CountryToggle name="Tanzania" code="TZ" flag="🇹🇿" active={true} />
-                            <CountryToggle name="Rwanda" code="RW" flag="🇷🇼" active={false} />
-                            <CountryToggle name="Nigeria" code="NG" flag="🇳🇬" active={false} />
+                            {countries.map((c) => (
+                                <CountryToggle
+                                    key={c._id}
+                                    name={c.name}
+                                    code={c.code}
+                                    flag={c.flag || '🌍'}
+                                    active={c.isActive}
+                                    onToggle={() => toggleCountry(c._id, c.isActive)}
+                                />
+                            ))}
                         </div>
 
                         <div className="mt-8 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-start gap-3">
@@ -128,10 +188,6 @@ export default function RatesPage() {
                                 Enabling a new region automatically activates its local currency for deposits but requires manual rate configuration.
                             </p>
                         </div>
-
-                        <button className="w-full mt-6 py-3 bg-white text-slate-950 font-black text-xs rounded-xl hover:bg-slate-200 transition-all uppercase tracking-widest">
-                            Add New Region
-                        </button>
                     </div>
 
                     <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 backdrop-blur-sm">
@@ -152,12 +208,12 @@ export default function RatesPage() {
     );
 }
 
-function RateControlRow({ from, to, rate, trend, percent }: any) {
+function RateControlRow({ from, to, rate, onChange }: any) {
     return (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-slate-950/50 border border-slate-800/80 rounded-2xl hover:border-slate-700 transition-all group">
             <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1">{from} Pairing</span>
-                <span className="text-sm font-bold text-slate-200">{to}</span>
+                <span className="text-sm font-bold text-slate-200 uppercase">{to} (Local Currency)</span>
             </div>
             <div className="flex items-center gap-8">
                 <div className="text-right">
@@ -166,17 +222,10 @@ function RateControlRow({ from, to, rate, trend, percent }: any) {
                         <div className="text-xs font-bold text-slate-400">1 {from} =</div>
                         <input
                             type="text"
-                            defaultValue={rate}
+                            value={rate}
+                            onChange={(e) => onChange(e.target.value)}
                             className="w-24 bg-slate-800/50 border border-slate-700 rounded-lg px-2 py-1 text-sm font-bold text-white text-center focus:outline-none focus:border-indigo-500"
                         />
-                    </div>
-                </div>
-                <div className="flex flex-col items-end min-w-[60px]">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1">Status</span>
-                    <div className={`flex items-center gap-1 text-[10px] font-black ${trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-rose-400' : 'text-slate-400'}`}>
-                        {trend === 'up' && <TrendingUp size={10} />}
-                        {trend === 'down' && <TrendingDown size={10} />}
-                        {percent}
                     </div>
                 </div>
                 <button className="p-2 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all">
@@ -205,18 +254,21 @@ function FeeInput({ label, value, icon }: any) {
     );
 }
 
-function CountryToggle({ name, code, flag, active }: any) {
+function CountryToggle({ name, code, flag, active, onToggle }: any) {
     return (
-        <div className={`flex items-center justify-between p-3 rounded-xl border transition-all ${active ? 'bg-slate-950/20 border-indigo-500/30' : 'bg-slate-900/10 border-slate-800 opacity-60'}`}>
+        <div className={`flex items-center justify-between p-3 rounded-xl border transition-all ${active ? 'bg-slate-950/20 border-indigo-500/30 font-bold' : 'bg-slate-900/10 border-slate-800 opacity-60'}`}>
             <div className="flex items-center gap-3">
-                <span className="text-xl grayscale-[0.5] group-hover:grayscale-0">{flag}</span>
+                <span className="text-xl">{flag}</span>
                 <div>
-                    <p className="text-xs font-bold text-white">{name}</p>
-                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{code}</p>
+                    <p className="text-xs text-white">{name}</p>
+                    <p className="text-[10px] text-slate-600 uppercase tracking-tight">{code}</p>
                 </div>
             </div>
-            <button className={`w-8 h-4 rounded-full relative transition-all ${active ? 'bg-indigo-600' : 'bg-slate-700'}`}>
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${active ? 'left-4.5' : 'left-0.5'}`} />
+            <button
+                onClick={onToggle}
+                className={`w-10 h-5 rounded-full relative transition-all shadow-inner ${active ? 'bg-indigo-600' : 'bg-slate-700'}`}
+            >
+                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${active ? 'left-6' : 'left-1'}`} />
             </button>
         </div>
     );

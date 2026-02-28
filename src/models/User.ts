@@ -20,9 +20,13 @@ const UserSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin', 'finance', 'kyc_reviewer', 'support'],
+        enum: ['user', 'super_admin', 'admin', 'finance', 'kyc_reviewer', 'support'],
         lowercase: true,
         default: 'user',
+    },
+    walletId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Wallet',
     },
     password: {
         type: String,
