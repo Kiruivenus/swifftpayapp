@@ -175,7 +175,7 @@ export default function NotificationsPage() {
                             <div className="flex items-center justify-between pt-4">
                                 <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700 min-w-[150px]">
                                     {estimating ? <Loader2 className="animate-spin text-indigo-400" size={14} /> : <Target size={14} className="text-indigo-400" />}
-                                    Est. Reach: {estimate !== null ? estimate.toLocaleString() : '...'} Users
+                                    Est. Reach: {typeof estimate === 'number' ? estimate.toLocaleString() : '...'} Users
                                 </div>
                                 <button
                                     onClick={handleSend}
@@ -204,9 +204,9 @@ export default function NotificationsPage() {
                                 <HistoryItem
                                     key={b._id}
                                     title={b.title}
-                                    date={new Date(b.createdAt).toLocaleString()}
-                                    reach={b.stats.targeted.toLocaleString()}
-                                    delivered={b.stats.delivered.toLocaleString()}
+                                    date={b.createdAt ? new Date(b.createdAt).toLocaleString() : 'Just now'}
+                                    reach={(b.stats?.targeted ?? 0).toLocaleString()}
+                                    delivered={(b.stats?.delivered ?? 0).toLocaleString()}
                                     status={b.status}
                                 />
                             ))}
