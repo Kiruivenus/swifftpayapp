@@ -5,6 +5,7 @@ import User from '@/models/User';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -12,27 +13,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (error) return error;
 
     try {
-        const { reason } = await req.json();
+        const body = await req.json();
+        const { reason } = body;
         if (!reason) return NextResponse.json({ message: 'Rejection reason is required' }, { status: 400 });
 
         await dbConnect();
 
-        const request = await KycRequest.findById(id);
-        if (!request) return NextResponse.json({ message: 'KYC Request not found' }, { status: 404 });
+        const kyc = await KycRequest.findById(id);
+        if (!kyc) return NextResponse.json({ message: 'KYC Request not found' }, { status: 404 });
 
-        if (request.status !== 'PENDING') {
-            return NextResponse.json({ message: `This request has already been ${request.status.toLowerCase()}.` }, { status: 400 });
+        if (kyc.status !== 'PENDING') {
+            return NextResponse.json({ message: `This request has already been ${kyc.status.toLowerCase()}.` }, { status: 400 });
         }
 
         // update request
-        request.status = 'REJECTED';
-        request.rejectionReason = reason;
-        request.reviewedAt = new Date();
-        request.reviewedBy = admin.id;
-        await request.save();
+        kyc.status = 'REJECTED';
+        kyc.rejectionReason = reason;
+        kyc.reviewedAt = new Date();
+        kyc.reviewedBy = admin.id;
+        await kyc.save();
+
+        // Send Notification
+        await sendNotification(
+            kyc.userId.toString(),
+            "Verification Rejected",
+            `Your KYC verification was rejected. Reason: ${reason}`,
+            "SYSTEM"
+        );
 
         // update user
-        await User.findByIdAndUpdate(request.userId, {
+        await User.findByIdAndUpdate(kyc.userId, {
             $set: { kycStatus: 'REJECTED', kycRejectionReason: reason }
         });
 
@@ -47,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             actionType: 'REJECT_KYC',
             targetType: 'KYC',
             targetId: id,
-            details: { userId: request.userId, reason },
+            details: { userId: kyc.userId, reason },
             ipAddress: ip,
             userAgent: ua,
             severity: 'WARNING'

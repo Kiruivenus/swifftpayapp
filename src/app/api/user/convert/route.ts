@@ -7,7 +7,7 @@ import PlatformFeesLimits from '@/models/PlatformFeesLimits';
 import ConversionControl from '@/models/ConversionControl';
 import { verifyAuth } from '@/lib/auth';
 import mongoose from 'mongoose';
-import { sendPushNotification } from '@/lib/notifications';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     const session = await mongoose.startSession();
@@ -102,11 +102,11 @@ export async function POST(req: NextRequest) {
         await session.commitTransaction();
 
         // Trigger Notification (Async)
-        sendPushNotification(
+        await sendNotification(
             user.id,
             "Conversion Success",
             `Swapped ${fromAmount} ${fromCurrency} for ${toAmount.toFixed(2)} ${toCurrency}`,
-            'transactions'
+            'FINANCE'
         );
 
         return NextResponse.json({

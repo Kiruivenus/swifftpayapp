@@ -5,6 +5,7 @@ import User from '@/models/User';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -14,21 +15,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
         await dbConnect();
 
-        const request = await KycRequest.findById(id);
-        if (!request) return NextResponse.json({ message: 'KYC Request not found' }, { status: 404 });
+        const kyc = await KycRequest.findById(id);
+        if (!kyc) return NextResponse.json({ message: 'KYC Request not found' }, { status: 404 });
 
-        if (request.status !== 'PENDING') {
-            return NextResponse.json({ message: `This request has already been ${request.status.toLowerCase()}.` }, { status: 400 });
+        if (kyc.status !== 'PENDING') {
+            return NextResponse.json({ message: `This request has already been ${kyc.status.toLowerCase()}.` }, { status: 400 });
         }
 
         // update request
-        request.status = 'APPROVED';
-        request.reviewedAt = new Date();
-        request.reviewedBy = admin.id;
-        await request.save();
+        kyc.status = 'APPROVED';
+        kyc.reviewedAt = new Date();
+        kyc.reviewedBy = admin.id;
+        await kyc.save();
+
+        // Send Notification
+        await sendNotification(
+            kyc.userId.toString(),
+            "Verification Successful",
+            "Your KYC verification has been approved. Welcome to SwiftPay!",
+            "SYSTEM"
+        );
 
         // update user
-        await User.findByIdAndUpdate(request.userId, {
+        await User.findByIdAndUpdate(kyc.userId, {
             $set: { kycStatus: 'APPROVED' }
         });
 
@@ -43,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             actionType: 'APPROVE_KYC',
             targetType: 'KYC',
             targetId: id,
-            details: { userId: request.userId, idNumber: request.idNumber },
+            details: { userId: kyc.userId, documentNumber: kyc.documentNumber },
             ipAddress: ip,
             userAgent: ua,
             severity: 'INFO'

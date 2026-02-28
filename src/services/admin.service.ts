@@ -164,11 +164,34 @@ class AdminService {
         return this.fetchJson(`/api/admin/rates/history?${query}`);
     }
 
-    // Notifications
-    async broadcastNotification(data: { title: string; body: string; type: string }) {
-        return this.fetchJson('/api/admin/notifications/broadcast', {
+    // Communications (Phase 10)
+    async getCommunicationsOverview() {
+        return this.fetchJson('/api/admin/communications/overview');
+    }
+
+    async getAudienceEstimate(targetAudience: any) {
+        return this.fetchJson('/api/admin/communications/estimate', {
+            method: 'POST',
+            body: JSON.stringify({ targetAudience }),
+        });
+    }
+
+    async createBroadcast(data: any) {
+        return this.fetchJson('/api/admin/communications/broadcasts', {
             method: 'POST',
             body: JSON.stringify(data),
+        });
+    }
+
+    async getBroadcasts(params: { page?: number; limit?: number } = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/communications/broadcasts?${query}`);
+    }
+
+    async updateNotificationSettings(settings: any) {
+        return this.fetchJson('/api/admin/communications/settings', {
+            method: 'PUT',
+            body: JSON.stringify(settings),
         });
     }
 

@@ -21,30 +21,91 @@ import { adminService } from '@/services/admin.service';
 export default function NotificationsPage() {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
-    const [type, setType] = useState('push');
-    const [target, setTarget] = useState('all');
+    const [channels, setChannels] = useState({ push: true, email: false, inApp: true });
+    const [scope, setScope] = useState('ALL_USERS');
     const [sending, setSending] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [estimate, setEstimate] = useState<number | null>(null);
+    const [estimating, setEstimating] = useState(false);
+    const [recentBroadcasts, setRecentBroadcasts] = useState<any[]>([]);
+    const [settings, setSettings] = useState<any>(null);
+
+    const fetchData = React.useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await adminService.getCommunicationsOverview();
+            setSettings(res.settings);
+            setRecentBroadcasts(res.recentBroadcasts);
+        } catch (err: any) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchEstimate = React.useCallback(async () => {
+        try {
+            setEstimating(true);
+            const res = await adminService.getAudienceEstimate({ scope });
+            setEstimate(res.targeted);
+        } catch (err: any) {
+            console.error(err);
+        } finally {
+            setEstimating(false);
+        }
+    }, [scope]);
+
+    React.useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => fetchEstimate(), 500);
+        return () => clearTimeout(timer);
+    }, [fetchEstimate]);
 
     const handleSend = async () => {
         if (!title || !body) return alert("Please fill in both title and message");
-        if (!confirm(`Broadcast this message to ${target} users via ${type}?`)) return;
+        if (!confirm(`Broadcast this message to ${estimate} users via selected channels?`)) return;
 
         try {
             setSending(true);
-            await adminService.broadcastNotification({
+            await adminService.createBroadcast({
                 title,
-                body,
-                type: type.toUpperCase()
+                message: body,
+                targetAudience: { scope },
+                channels,
+                sendNow: true
             });
-            alert("Broadcast sent successfully!");
+            alert("Broadcast queued successfully!");
             setTitle('');
             setBody('');
+            fetchData();
         } catch (err: any) {
             alert(err.message);
         } finally {
             setSending(false);
         }
     };
+
+    const handleToggleSetting = async (key: string, value: boolean) => {
+        try {
+            const newSettings = { ...settings, [key]: value };
+            setSettings(newSettings); // Optimistic UI
+            await adminService.updateNotificationSettings(newSettings);
+        } catch (err: any) {
+            alert(err.message);
+            fetchData(); // Revert on error
+        }
+    };
+
+    if (loading && !settings) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="animate-spin text-indigo-500" size={40} />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -71,19 +132,19 @@ export default function NotificationsPage() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Target Audience</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <TargetOption icon={<Users size={16} />} label="All Users" active={target === 'all'} onClick={() => setTarget('all')} />
-                                    <TargetOption icon={<Target size={16} />} label="Verified Only" active={target === 'verified'} onClick={() => setTarget('verified')} />
-                                    <TargetOption icon={<AlertCircle size={16} />} label="Unverified Only" active={target === 'unverified'} onClick={() => setTarget('unverified')} />
+                                    <TargetOption icon={<Users size={16} />} label="All Users" active={scope === 'ALL_USERS'} onClick={() => setScope('ALL_USERS')} />
+                                    <TargetOption icon={<Target size={16} />} label="Verified Only" active={scope === 'VERIFIED_ONLY'} onClick={() => setScope('VERIFIED_ONLY')} />
+                                    <TargetOption icon={<AlertCircle size={16} />} label="Unverified Only" active={scope === 'UNVERIFIED_ONLY'} onClick={() => setScope('UNVERIFIED_ONLY')} />
                                 </div>
                             </div>
 
                             {/* Channels */}
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Delivery Channels</label>
-                                <div className="flex flex-wrap gap-4">
-                                    <ChannelToggle icon={<Smartphone size={16} />} label="Push Notification" active={type === 'push'} onClick={() => setType('push')} />
-                                    <ChannelToggle icon={<Mail size={16} />} label="Email" active={type === 'email'} onClick={() => setType('email')} />
-                                    <ChannelToggle icon={<Bell size={16} />} label="In-App Banner" active={type === 'in-app'} onClick={() => setType('in-app')} />
+                                <div className="flex flex-wrap gap-6">
+                                    <ChannelToggle icon={<Smartphone size={16} />} label="Push" active={channels.push} onClick={() => setChannels({ ...channels, push: !channels.push })} />
+                                    <ChannelToggle icon={<Mail size={16} />} label="Email" active={channels.email} onClick={() => setChannels({ ...channels, email: !channels.email })} />
+                                    <ChannelToggle icon={<Bell size={16} />} label="In-App" active={channels.inApp} onClick={() => setChannels({ ...channels, inApp: !channels.inApp })} />
                                 </div>
                             </div>
 
@@ -112,9 +173,9 @@ export default function NotificationsPage() {
                             </div>
 
                             <div className="flex items-center justify-between pt-4">
-                                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700">
-                                    <Target size={14} className="text-indigo-400" />
-                                    Est. Reach: {target === 'all' ? '1,280' : target === 'verified' ? '840' : '440'} Users
+                                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700 min-w-[150px]">
+                                    {estimating ? <Loader2 className="animate-spin text-indigo-400" size={14} /> : <Target size={14} className="text-indigo-400" />}
+                                    Est. Reach: {estimate !== null ? estimate.toLocaleString() : '...'} Users
                                 </div>
                                 <button
                                     onClick={handleSend}
@@ -136,21 +197,19 @@ export default function NotificationsPage() {
                                 Recent Broadcasts
                             </h3>
                         </div>
-                        <div className="divide-y divide-slate-800">
-                            <HistoryItem
-                                title="Platform Update v2.1"
-                                date="Today at 10:00 AM"
-                                reach="1,280"
-                                clicks="940"
-                                status="delivered"
-                            />
-                            <HistoryItem
-                                title="New Verification Requirements"
-                                date="Yesterday at 3:45 PM"
-                                reach="1,240"
-                                clicks="420"
-                                status="delivered"
-                            />
+                        <div className="divide-y divide-slate-800 min-h-[100px]">
+                            {recentBroadcasts.length === 0 ? (
+                                <div className="p-10 text-center text-slate-500 text-xs">No recent broadcasts found.</div>
+                            ) : recentBroadcasts.map((b) => (
+                                <HistoryItem
+                                    key={b._id}
+                                    title={b.title}
+                                    date={new Date(b.createdAt).toLocaleString()}
+                                    reach={b.stats.targeted.toLocaleString()}
+                                    delivered={b.stats.delivered.toLocaleString()}
+                                    status={b.status}
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -160,20 +219,37 @@ export default function NotificationsPage() {
                     <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 backdrop-blur-sm">
                         <h3 className="text-lg font-bold text-white mb-6">Automated Alerts</h3>
                         <div className="space-y-4">
-                            <TriggerItem label="New Login Detected" active={true} />
-                            <TriggerItem label="KYC Status Update" active={true} />
-                            <TriggerItem label="Deposit Successful" active={true} />
-                            <TriggerItem label="Withdrawal Processed" active={true} />
+                            <TriggerItem
+                                label="New Login Detected"
+                                active={settings?.newLoginDetected}
+                                onToggle={(v: boolean) => handleToggleSetting('newLoginDetected', v)}
+                            />
+                            <TriggerItem
+                                label="KYC Status Update"
+                                active={settings?.kycStatusUpdates}
+                                onToggle={(v: boolean) => handleToggleSetting('kycStatusUpdates', v)}
+                            />
+                            <TriggerItem
+                                label="Deposit Successful"
+                                active={settings?.depositSuccessful}
+                                onToggle={(v: boolean) => handleToggleSetting('depositSuccessful', v)}
+                            />
+                            <TriggerItem
+                                label="Withdrawal Processed"
+                                active={settings?.withdrawalProcessed}
+                                onToggle={(v: boolean) => handleToggleSetting('withdrawalProcessed', v)}
+                            />
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-indigo-900/20 to-blue-900/20 border border-indigo-500/20 rounded-3xl p-6 backdrop-blur-sm">
-                        <h4 className="text-white font-bold mb-3 flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-indigo-900/20 to-blue-900/20 border border-indigo-500/20 rounded-3xl p-6 backdrop-blur-sm relative overflow-hidden">
+                        <h4 className="text-white font-bold mb-3 flex items-center gap-2 relative z-10">
                             Compliance Notice
                         </h4>
-                        <p className="text-xs text-slate-400 leading-relaxed">
+                        <p className="text-xs text-slate-400 leading-relaxed relative z-10">
                             All promotional messages are logged for regulatory audit. Avoid sending links to third-party platforms in system notifications.
                         </p>
+                        <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-indigo-500/10 blur-2xl rounded-full" />
                     </div>
                 </div>
             </div>
@@ -213,38 +289,53 @@ function ChannelToggle({ icon, label, active, onClick }: any) {
     );
 }
 
-function HistoryItem({ title, date, reach, clicks }: any) {
+function HistoryItem({ title, date, reach, delivered, status }: any) {
+    const statusConfig: any = {
+        'SENT': { label: 'Sent', color: 'emerald' },
+        'QUEUED': { label: 'Queued', color: 'amber' },
+        'SENDING': { label: 'Sending', color: 'blue' },
+        'FAILED': { label: 'Failed', color: 'rose' },
+        'PARTIAL': { label: 'Partial', color: 'orange' },
+        'DRAFT': { label: 'Draft', color: 'slate' }
+    };
+
+    const config = statusConfig[status] || statusConfig['SENT'];
+
     return (
         <div className="p-6 group hover:bg-slate-800/10 transition-colors">
             <div className="flex justify-between items-start mb-2">
                 <h4 className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{title}</h4>
-                <span className="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                    <CheckCircle2 size={10} /> Delivered
+                <span className={`flex items-center gap-1.5 text-[9px] font-black text-${config.color}-400 uppercase tracking-widest px-2 py-0.5 bg-${config.color}-500/10 border border-${config.color}-500/20 rounded-full`}>
+                    {config.label === 'Sent' && <CheckCircle2 size={10} />}
+                    {config.label}
                 </span>
             </div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-4">{date}</p>
             <div className="flex items-center gap-6">
                 <div>
-                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Reach</p>
+                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Targeted</p>
                     <p className="text-sm font-bold text-slate-300">{reach}</p>
                 </div>
                 <div className="w-px h-6 bg-slate-800" />
                 <div>
-                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Clicks</p>
-                    <p className="text-sm font-bold text-slate-300">{clicks}</p>
+                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Delivered</p>
+                    <p className="text-sm font-bold text-slate-300">{delivered}</p>
                 </div>
             </div>
         </div>
     );
 }
 
-function TriggerItem({ label, active }: any) {
+function TriggerItem({ label, active, onToggle }: any) {
     return (
         <div className="flex items-center justify-between p-3 rounded-xl border border-slate-800 bg-slate-950/20">
             <span className="text-xs font-bold text-slate-300">{label}</span>
-            <div className={`w-10 h-5 rounded-full relative transition-all cursor-pointer shadow-inner ${active ? 'bg-emerald-600' : 'bg-slate-800'}`}>
+            <button
+                onClick={() => onToggle(!active)}
+                className={`w-10 h-5 rounded-full relative transition-all shadow-inner ${active ? 'bg-emerald-600' : 'bg-slate-800'}`}
+            >
                 <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${active ? 'left-6' : 'left-1'}`} />
-            </div>
+            </button>
         </div>
     );
 }

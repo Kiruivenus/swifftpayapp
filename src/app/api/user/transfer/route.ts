@@ -5,7 +5,7 @@ import Transaction from '@/models/Transaction';
 import { verifyAuth } from '@/lib/auth';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { sendPushNotification } from '@/lib/notifications';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     try {
@@ -123,17 +123,17 @@ export async function POST(req: NextRequest) {
             await session.commitTransaction();
 
             // Trigger Notifications (Async)
-            sendPushNotification(
+            await sendNotification(
                 senderIdStr,
                 "Transaction Alert",
                 `Sent ${amount} ${currency} to ${recipientUser.username || recipient}`,
-                'transactions'
+                'FINANCE'
             );
-            sendPushNotification(
+            await sendNotification(
                 recipientIdStr,
                 "Transaction Alert",
                 `Received ${amount} ${currency} from ${sender.username || sender.email}`,
-                'transactions'
+                'FINANCE'
             );
 
             return NextResponse.json({ message: 'Transfer successful' });

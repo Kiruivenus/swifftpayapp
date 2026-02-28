@@ -8,7 +8,7 @@ import Session from '@/models/Session';
 import SecurityPolicy from '@/models/SecurityPolicy';
 import SecurityEvent from '@/models/SecurityEvent';
 import TrustedDevice from '@/models/TrustedDevice';
-import { sendPushNotification } from '@/lib/notifications';
+import { sendNotification } from '@/lib/notifications';
 import { lookupIp } from '@/lib/geo';
 
 export async function POST(request: Request) {
@@ -156,11 +156,11 @@ export async function POST(request: Request) {
         }
 
         // Trigger Notification (Async)
-        sendPushNotification(
+        await sendNotification(
             user._id.toString(),
             "Security Alert",
             "A new login was detected on your account.",
-            'security'
+            'SECURITY'
         );
 
         const response = NextResponse.json({
