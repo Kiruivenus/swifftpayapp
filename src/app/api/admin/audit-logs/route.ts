@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
         const severity = searchParams.get('severity');
         const actorId = searchParams.get('actorId');
         const targetType = searchParams.get('targetType');
+        const targetId = searchParams.get('targetId') || searchParams.get('targetUserId');
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
         const skip = (page - 1) * limit;
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
         if (severity) query.severity = severity;
         if (actorId) query.actorId = actorId;
         if (targetType) query.targetType = targetType;
+        if (targetId) query.targetId = targetId;
 
         // Execute query
         const items = await AdminLog.find(query)

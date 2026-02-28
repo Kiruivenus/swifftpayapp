@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Globe,
@@ -11,9 +11,11 @@ import {
     Smartphone,
     ShieldCheck,
     ChevronRight,
-    ArrowLeft
+    ArrowLeft,
+    Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { adminService } from '@/services/admin.service';
 
 export default function RegisterPage() {
     const [step, setStep] = useState(1);
@@ -23,7 +25,25 @@ export default function RegisterPage() {
         email: '',
         password: '',
     });
+    const [countries, setCountries] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const data = await adminService.getRatesConfig();
+                // Filter only enabled regions
+                const enabledRegions = data.regions.filter((r: any) => r.enabled);
+                setCountries(enabledRegions);
+            } catch (err) {
+                console.error("Failed to fetch regions", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCountries();
+    }, []);
 
     const handleNext = () => {
         if (step < 3) setStep(step + 1);
@@ -34,11 +54,6 @@ export default function RegisterPage() {
         if (step > 1) setStep(step - 1);
     };
 
-    const countries = [
-        { name: 'Kenya', code: 'KES', flag: '🇰🇪' },
-        { name: 'Uganda', code: 'UGX', flag: '🇺🇬' },
-        { name: 'Tanzania', code: 'TZS', flag: '🇹🇿' },
-    ];
 
     return (
         <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 selection:bg-indigo-500/30">
@@ -82,22 +97,31 @@ export default function RegisterPage() {
                             </div>
 
                             <div className="space-y-3">
-                                {countries.map((c) => (
-                                    <button
-                                        key={c.code}
-                                        onClick={() => setFormData({ ...formData, country: c.name, currency: c.code })}
-                                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${formData.country === c.name ? 'bg-indigo-600/10 border-indigo-500/50 text-white shadow-[0_0_20px_rgba(99,102,241,0.1)]' : 'bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700'}`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-2xl">{c.flag}</span>
-                                            <span className="font-bold">{c.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-black uppercase bg-slate-800 px-2 py-1 rounded text-slate-500">{c.code}</span>
-                                            {formData.country === c.name && <CheckCircle2 size={18} className="text-indigo-400" />}
-                                        </div>
-                                    </button>
-                                ))}
+                                {loading ? (
+                                    <div className="flex justify-center py-10">
+                                        <Loader2 className="animate-spin text-indigo-500" size={32} />
+                                    </div>
+                                ) : (
+                                    countries.map((c) => (
+                                        <button
+                                            key={c.countryCode}
+                                            onClick={() => setFormData({ ...formData, country: c.countryName, currency: c.currencyCode })}
+                                            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${formData.country === c.countryName ? 'bg-indigo-600/10 border-indigo-500/50 text-white shadow-[0_0_20px_rgba(99,102,241,0.1)]' : 'bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xl">🌍</span>
+                                                <span className="font-bold">{c.countryName}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black uppercase bg-slate-800 px-2 py-1 rounded text-slate-500">{c.currencyCode}</span>
+                                                {formData.country === c.countryName && <CheckCircle2 size={18} className="text-indigo-400" />}
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                                {!loading && countries.length === 0 && (
+                                    <p className="text-center text-slate-500 text-xs py-4">No supported regions available.</p>
+                                )}
                             </div>
                         </div>
                     )}

@@ -1,4 +1,4 @@
-export type Role = 'user' | 'super_admin' | 'admin' | 'finance' | 'kyc_reviewer' | 'support';
+export type Role = 'user' | 'super_admin' | 'admin' | 'finance' | 'kyc_reviewer' | 'support' | 'auditor';
 
 export const ROLES: Record<string, Role> = {
     USER: 'user',
@@ -6,7 +6,8 @@ export const ROLES: Record<string, Role> = {
     ADMIN: 'admin',
     FINANCE: 'finance',
     KYC_REVIEWER: 'kyc_reviewer',
-    SUPPORT: 'support'
+    SUPPORT: 'support',
+    AUDITOR: 'auditor'
 };
 
 export const PERMISSIONS = {
@@ -22,6 +23,8 @@ export const PERMISSIONS = {
     BROADCAST_NOTIFICATIONS: 'broadcast_notifications',
     VIEW_SESSIONS: 'view_sessions',
     MANAGE_SESSIONS: 'manage_sessions',
+    FREEZE_FUNDS: 'freeze_funds',
+    FLAG_TRANSACTIONS: 'flag_transactions',
 };
 
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
@@ -38,6 +41,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
         PERMISSIONS.BROADCAST_NOTIFICATIONS,
         PERMISSIONS.VIEW_SESSIONS,
         PERMISSIONS.MANAGE_SESSIONS,
+        PERMISSIONS.FREEZE_FUNDS,
     ],
     finance: [
         PERMISSIONS.APPROVE_WITHDRAWALS,
@@ -52,6 +56,11 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     support: [
         PERMISSIONS.MANAGE_USERS,
         PERMISSIONS.VIEW_TRANSACTIONS,
+    ],
+    auditor: [
+        PERMISSIONS.AUDIT_LOGS,
+        PERMISSIONS.VIEW_TRANSACTIONS,
+        PERMISSIONS.FLAG_TRANSACTIONS, // Added for auditor role
     ],
     user: [],
 };

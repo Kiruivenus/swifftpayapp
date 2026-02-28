@@ -25,6 +25,7 @@ export default function RatesPage() {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [newPairModal, setNewPairModal] = useState(false);
+    const [showAddRegionModal, setShowAddRegionModal] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -89,6 +90,19 @@ export default function RatesPage() {
         }
     };
 
+    const handleDeletePair = async (base: string, quote: string) => {
+        if (!confirm(`Are you sure you want to delete the ${base}/${quote} pair?`)) return;
+        try {
+            setSaving(true);
+            await adminService.deleteRatePair(base, quote);
+            await fetchData();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading || !config) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -148,6 +162,7 @@ export default function RatesPage() {
                                     rate={rate.rate}
                                     source={rate.source}
                                     onUpdate={fetchData}
+                                    onDelete={() => handleDeletePair(rate.baseCurrency, rate.quoteCurrency)}
                                 />
                             ))}
                             {config.fxRates.length === 0 && (
@@ -249,6 +264,14 @@ export default function RatesPage() {
                             ))}
                         </div>
 
+                        <button
+                            onClick={() => setShowAddRegionModal(true)}
+                            className="w-full mt-6 py-4 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-2xl text-indigo-400 hover:text-indigo-300 text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                        >
+                            <Plus size={16} />
+                            Add Supported Region
+                        </button>
+
                         <div className="mt-8 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-start gap-4">
                             <Info size={16} className="text-indigo-400 shrink-0 mt-0.5" />
                             <p className="text-[11px] text-indigo-300 font-medium leading-relaxed">
@@ -279,50 +302,36 @@ export default function RatesPage() {
                 </div>
             </div>
 
-            {/* History Modal (Simplified for injection) */}
+            {/* Change History Modal */}
             {historyOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
-                        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                <History className="text-indigo-400" size={24} />
-                                Rates Change History
-                            </h3>
-                            <button onClick={() => setHistoryOpen(false)} className="text-slate-500 hover:text-white transition-colors">✕</button>
-                        </div>
-                        <div className="p-6 overflow-y-auto space-y-4">
-                            {history.map((h, i) => (
-                                <div key={i} className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800 flex justify-between items-start">
-                                    <div>
-                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{h.type}</p>
-                                        <p className="text-xs text-slate-300 mt-1 font-medium">Changed by {h.changedBy?.username || 'Admin'}</p>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">{new Date(h.timestamp).toLocaleString()}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="px-2 py-1 bg-slate-800 rounded text-[9px] text-slate-400 font-mono">
-                                            {h.ip}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {history.length === 0 && <p className="text-center py-10 text-slate-500">No history records found.</p>}
-                        </div>
-                    </div>
-                </div>
+                <RateHistoryModal
+                    history={history}
+                    onClose={() => setHistoryOpen(false)}
+                />
             )}
 
-            {/* New Pair Modal Integration */}
+            {/* New Rate Pair Modal */}
             {newPairModal && (
                 <NewRateModal
                     onClose={() => setNewPairModal(false)}
                     onSuccess={() => { setNewPairModal(false); fetchData(); }}
                 />
             )}
+
+            {/* Add Region Modal */}
+            {showAddRegionModal && (
+                <AddRegionModal
+                    onClose={() => setShowAddRegionModal(false)}
+                    onSuccess={() => { setShowAddRegionModal(false); fetchData(); }}
+                />
+            )}
         </div>
     );
 }
 
-function RateControlRow({ base, quote, rate, source, onUpdate }: any) {
+// Support Components
+
+function RateControlRow({ base, quote, rate, source, onUpdate, onDelete }: any) {
     const [val, setVal] = useState(rate);
     const [saving, setSaving] = useState(false);
 
@@ -343,7 +352,7 @@ function RateControlRow({ base, quote, rate, source, onUpdate }: any) {
             <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{base} Pairing</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${source === 'manual' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${source === 'manual' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
                         {source}
                     </span>
                 </div>
@@ -369,6 +378,13 @@ function RateControlRow({ base, quote, rate, source, onUpdate }: any) {
                     className="p-3 text-indigo-400 hover:text-white hover:bg-indigo-600 rounded-xl transition-all disabled:opacity-30"
                 >
                     {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                </button>
+                <button
+                    onClick={onDelete}
+                    className="p-3 text-rose-400 hover:text-white hover:bg-rose-600 rounded-xl transition-all"
+                    title="Delete Pair"
+                >
+                    <Trash2 size={18} />
                 </button>
             </div>
         </div>
@@ -438,6 +454,79 @@ function NewRateModal({ onClose, onSuccess }: any) {
     );
 }
 
+function AddRegionModal({ onClose, onSuccess }: any) {
+    const [countryName, setCountryName] = useState('');
+    const [countryCode, setCountryCode] = useState('');
+    const [currencyCode, setCurrencyCode] = useState('');
+    const [phonePrefix, setPhonePrefix] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!countryName || !countryCode || !currencyCode || !phonePrefix) {
+            return alert("Please fill all fields");
+        }
+        try {
+            setSaving(true);
+            await adminService.addRegion({
+                countryName,
+                countryCode: countryCode.toUpperCase(),
+                currencyCode: currencyCode.toUpperCase(),
+                phonePrefix
+            });
+            onSuccess();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl space-y-6">
+                <div className="text-center">
+                    <div className="w-16 h-16 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Globe size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Add Supported Region</h3>
+                    <p className="text-xs text-slate-500 mt-2">Registers a new country and its currency mapping.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                    <div className="space-y-2 col-span-2">
+                        <label className="text-[10px] font-black text-slate-600 uppercase pl-1">Country Name</label>
+                        <input value={countryName} onChange={e => setCountryName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-indigo-500 outline-none" placeholder="e.g. Uganda" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-600 uppercase pl-1">Country Code (ISO)</label>
+                        <input value={countryCode} onChange={e => setCountryCode(e.target.value.toUpperCase())} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-indigo-500 outline-none" placeholder="UG" maxLength={2} />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-600 uppercase pl-1">Currency Code</label>
+                        <input value={currencyCode} onChange={e => setCurrencyCode(e.target.value.toUpperCase())} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-indigo-500 outline-none" placeholder="UGX" maxLength={4} />
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                        <label className="text-[10px] font-black text-slate-600 uppercase pl-1">Phone Prefix</label>
+                        <input value={phonePrefix} onChange={e => setPhonePrefix(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:border-indigo-500 outline-none" placeholder="+256" />
+                    </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                    <button onClick={onClose} className="flex-1 py-3 text-slate-500 font-bold text-xs uppercase hover:text-white transition-colors">Cancel</button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving}
+                        className="flex-3 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs rounded-xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    >
+                        {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+                        ADD REGION
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function FeeInput({ label, value, icon, onChange }: any) {
     return (
         <div className="space-y-2 group">
@@ -476,6 +565,39 @@ function RegionToggle({ name, code, currency, prefix, active, onToggle }: any) {
             >
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-500 shadow-lg ${active ? 'left-7' : 'left-1'}`} />
             </button>
+        </div>
+    );
+}
+
+function RateHistoryModal({ history, onClose }: any) {
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+                <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                        <History className="text-indigo-400" size={24} />
+                        Rates Change History
+                    </h3>
+                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">✕</button>
+                </div>
+                <div className="p-6 overflow-y-auto space-y-4">
+                    {history.map((h: any, i: number) => (
+                        <div key={i} className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800 flex justify-between items-start">
+                            <div>
+                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{h.type}</p>
+                                <p className="text-xs text-slate-300 mt-1 font-medium">Changed by {h.changedBy?.username || 'Admin'}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">{new Date(h.timestamp).toLocaleString()}</p>
+                            </div>
+                            <div className="text-right">
+                                <div className="px-2 py-1 bg-slate-800 rounded text-[9px] text-slate-400 font-mono">
+                                    {h.ip}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {history.length === 0 && <p className="text-center py-10 text-slate-500">No history records found.</p>}
+                </div>
+            </div>
         </div>
     );
 }

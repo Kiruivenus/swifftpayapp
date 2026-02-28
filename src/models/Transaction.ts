@@ -4,6 +4,7 @@ const TransactionSchema = new Schema({
     userId: {
         type: String,
         required: true,
+        ref: 'User',
         index: true,
     },
     senderId: {
@@ -55,6 +56,12 @@ const TransactionSchema = new Schema({
         ref: 'User',
     },
     rejectionReason: String,
+    isFlagged: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+    flagReason: String,
 });
 
 const Transaction = models.Transaction || model('Transaction', TransactionSchema);

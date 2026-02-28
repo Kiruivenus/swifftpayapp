@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
         ]);
 
         return NextResponse.json({
-            withdrawals,
+            items: withdrawals,
             total,
             pages: Math.ceil(total / limit),
             currentPage: page

@@ -64,6 +64,7 @@ class AdminService {
     async getUsers(params: {
         search?: string;
         status?: string;
+        kycStatus?: string;
         role?: string;
         page?: number;
         limit?: number;
@@ -90,6 +91,13 @@ class AdminService {
     async getUserTransactions(id: string, params: any = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/users/${id}/transactions?${query}`);
+    }
+
+    async promoteAdmin(userId: string, role: string) {
+        return this.fetchJson('/api/admin/admins/create-or-promote', {
+            method: 'POST',
+            body: JSON.stringify({ userId, role }),
+        });
     }
 
     // KYC
@@ -135,6 +143,20 @@ class AdminService {
         });
     }
 
+    async flagTransaction(id: string, reason: string) {
+        return this.fetchJson(`/api/admin/transactions/${id}/flag`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+    }
+
+    async unflagTransaction(id: string, reason: string = '') {
+        return this.fetchJson(`/api/admin/transactions/${id}/unflag`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+    }
+
     async getFinanceMetrics(params: { from?: string; to?: string } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/finance/metrics?${query}`);
@@ -155,6 +177,25 @@ class AdminService {
 
     async rejectWithdrawal(id: string, reason: string) {
         return this.fetchJson(`/api/admin/withdrawals/${id}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+    }
+
+    // Balance Holds
+    async getUserHolds(userId: string) {
+        return this.fetchJson(`/api/admin/users/${userId}/holds`);
+    }
+
+    async createHold(userId: string, data: { currency: string; amount: number; reason: string; referenceId?: string }) {
+        return this.fetchJson(`/api/admin/users/${userId}/holds`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async releaseHold(holdId: string, reason: string = '') {
+        return this.fetchJson(`/api/admin/holds/${holdId}/release`, {
             method: 'POST',
             body: JSON.stringify({ reason }),
         });
@@ -183,6 +224,19 @@ class AdminService {
         return this.fetchJson(`/api/admin/rates/regions/${countryCode}`, {
             method: 'PUT',
             body: JSON.stringify(data),
+        });
+    }
+
+    async addRegion(data: any) {
+        return this.fetchJson('/api/admin/rates/regions', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async deleteRatePair(baseCurrency: string, quoteCurrency: string) {
+        return this.fetchJson(`/api/admin/rates/pairs?base=${baseCurrency}&quote=${quoteCurrency}`, {
+            method: 'DELETE',
         });
     }
 
