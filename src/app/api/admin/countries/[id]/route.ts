@@ -5,7 +5,8 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.PLATFORM_SETTINGS);
     if (error) return error;
 
@@ -14,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         await dbConnect();
 
         const country = await Country.findByIdAndUpdate(
-            params.id,
+            id,
             { $set: body },
             { new: true }
         );
@@ -22,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (!country) return NextResponse.json({ message: 'Country not found' }, { status: 404 });
 
         // Audit log
-        await logAdminAction(admin.id, 'UPDATE_COUNTRY', 'COUNTRY', params.id, `Updated country configuration for ${country.countryName}`);
+        await logAdminAction(admin.id, 'UPDATE_COUNTRY', 'COUNTRY', id, `Updated country configuration for ${country.countryName}`);
 
         return NextResponse.json(country);
 
@@ -31,17 +32,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.PLATFORM_SETTINGS);
     if (error) return error;
 
     try {
         await dbConnect();
-        const country = await Country.findByIdAndDelete(params.id);
+        const country = await Country.findByIdAndDelete(id);
         if (!country) return NextResponse.json({ message: 'Country not found' }, { status: 404 });
 
         // Audit log
-        await logAdminAction(admin.id, 'DELETE_COUNTRY', 'COUNTRY', params.id, `Deleted country: ${country.countryName}`);
+        await logAdminAction(admin.id, 'DELETE_COUNTRY', 'COUNTRY', id, `Deleted country: ${country.countryName}`);
 
         return NextResponse.json({ success: true, message: 'Country deleted.' });
 

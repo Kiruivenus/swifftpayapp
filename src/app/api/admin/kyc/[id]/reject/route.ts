@@ -6,7 +6,8 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.REVIEW_KYC);
     if (error) return error;
 
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
         await dbConnect();
 
-        const request = await KycRequest.findById(params.id);
+        const request = await KycRequest.findById(id);
         if (!request) return NextResponse.json({ message: 'KYC Request not found' }, { status: 404 });
 
         if (request.status !== 'PENDING') {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         });
 
         // Audit log
-        await logAdminAction(admin.id, 'REJECT_KYC', 'KYC', params.id, `Rejected KYC for user ${request.userId}. Reason: ${reason}`);
+        await logAdminAction(admin.id, 'REJECT_KYC', 'KYC', id, `Rejected KYC for user ${request.userId}. Reason: ${reason}`);
 
         return NextResponse.json({ success: true, message: 'KYC request rejected.' });
 

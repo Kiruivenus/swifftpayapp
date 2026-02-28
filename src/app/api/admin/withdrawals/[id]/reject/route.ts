@@ -7,7 +7,8 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.APPROVE_WITHDRAWALS);
     if (error) return error;
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
         await dbConnect();
 
-        const tx = await Transaction.findById(params.id);
+        const tx = await Transaction.findById(id);
         if (!tx) return NextResponse.json({ message: 'Withdrawal request not found' }, { status: 404 });
 
         if (tx.type !== 'WITHDRAW' || tx.status !== 'PENDING') {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         // Audit log
-        await logAdminAction(admin.id, 'REJECT_WITHDRAWAL', 'TRANSACTION', params.id, `Rejected ${tx.amount} ${tx.currency} withdrawal for user ${tx.userId}. Reason: ${reason}`);
+        await logAdminAction(admin.id, 'REJECT_WITHDRAWAL', 'TRANSACTION', id, `Rejected ${tx.amount} ${tx.currency} withdrawal for user ${tx.userId}. Reason: ${reason}`);
 
         return NextResponse.json({ success: true, message: 'Withdrawal rejected. Funds returned to user.' });
 

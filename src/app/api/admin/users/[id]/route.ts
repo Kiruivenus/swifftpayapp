@@ -5,13 +5,14 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const { error } = await validateAdmin(req, PERMISSIONS.MANAGE_USERS);
     if (error) return error;
 
     try {
         await dbConnect();
-        const user = await User.findById(params.id);
+        const user = await User.findById(id);
         if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
         return NextResponse.json(user);
@@ -20,7 +21,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.MANAGE_USERS);
     if (error) return error;
 
@@ -28,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         const body = await req.json();
         await dbConnect();
 
-        const user = await User.findById(params.id);
+        const user = await User.findById(id);
         if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
         // Restrictions
@@ -46,17 +48,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
         // Perform update
         const updatedUser = await User.findByIdAndUpdate(
-            params.id,
+            id,
             { $set: body },
             { new: true }
         );
 
         // Audit log
         if (body.role && body.role !== oldRole) {
-            await logAdminAction(admin.id, 'CHANGE_ROLE', 'USER', params.id, `Changed role from ${oldRole} to ${body.role}`);
+            await logAdminAction(admin.id, 'CHANGE_ROLE', 'USER', id, `Changed role from ${oldRole} to ${body.role}`);
         }
         if (body.status && body.status !== oldStatus) {
-            await logAdminAction(admin.id, body.status === 'BLOCKED' ? 'BLOCK_USER' : 'UNBLOCK_USER', 'USER', params.id, `Changed status from ${oldStatus} to ${body.status}`);
+            await logAdminAction(admin.id, body.status === 'BLOCKED' ? 'BLOCK_USER' : 'UNBLOCK_USER', 'USER', id, `Changed status from ${oldStatus} to ${body.status}`);
         }
 
         return NextResponse.json(updatedUser);
