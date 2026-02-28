@@ -6,11 +6,11 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.FREEZE_FUNDS);
     if (error) return error;
 
-    const holdId = params.id;
+    const { id: holdId } = await params;
 
     try {
         const { reason } = await req.json();

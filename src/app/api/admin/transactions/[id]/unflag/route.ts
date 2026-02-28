@@ -5,11 +5,11 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.FLAG_TRANSACTIONS);
     if (error) return error;
 
-    const txId = params.id;
+    const { id: txId } = await params;
 
     try {
         const { reason } = await req.json();

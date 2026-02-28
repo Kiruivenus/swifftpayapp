@@ -8,11 +8,11 @@ import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
 // POST /api/admin/users/[id]/holds -> Create Hold
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.FREEZE_FUNDS);
     if (error) return error;
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     try {
         const { currency, amount, reason, referenceId } = await req.json();
@@ -81,13 +81,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 // GET /api/admin/users/[id]/holds -> List Holds
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { error } = await validateAdmin(req, PERMISSIONS.MANAGE_USERS);
     if (error) return error;
 
     try {
+        const { id } = await params;
         await dbConnect();
-        const holds = await BalanceHold.find({ userId: params.id }).sort({ createdAt: -1 });
+        const holds = await BalanceHold.find({ userId: id }).sort({ createdAt: -1 });
         return NextResponse.json({ items: holds });
     } catch (err: any) {
         return NextResponse.json({ message: err.message }, { status: 500 });
