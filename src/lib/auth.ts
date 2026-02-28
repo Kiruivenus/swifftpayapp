@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 export interface AuthUser {
     id: string;
     email: string;
-    role: string;
+    role: 'user' | 'admin' | 'finance' | 'kyc_reviewer' | 'support';
 }
 
 export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {

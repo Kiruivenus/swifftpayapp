@@ -145,7 +145,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             token,
             sessionId: session._id,
-            role: user.role,
+            role: user.role.toLowerCase(),
             username: user.username
         });
 
