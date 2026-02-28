@@ -45,6 +45,10 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    email2FAEnabled: {
+        type: Boolean,
+        default: true,
+    },
     usdtAddress: {
         type: String,
         unique: true,

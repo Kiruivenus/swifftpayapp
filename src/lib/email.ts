@@ -20,17 +20,17 @@ export function renderEmail({ title, body, code, actionText }: Partial<EmailOpti
         <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f7f9; }
             .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-            .header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); padding: 30px; text-align: center; color: white; }
+            .header { background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); padding: 30px; text-align: center; color: white; }
             .header h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
             .content { padding: 40px; }
             .content h2 { color: #1e293b; margin-top: 0; font-size: 22px; }
             .content p { font-size: 16px; color: #475569; margin-bottom: 24px; }
-            .code-box { background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; }
-            .code { font-size: 36px; font-weight: bold; color: #6366f1; letter-spacing: 4px; font-family: monospace; }
+            .code-box { background: #fff1f2; border: 2px dashed #fecdd3; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; }
+            .code { font-size: 36px; font-weight: bold; color: #e11d48; letter-spacing: 4px; font-family: monospace; }
             .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
             .footer p { margin: 5px 0; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 10px; }
-            .security-note { border-left: 4px solid #f59e0b; background: #fffbeb; padding: 15px; margin-top: 25px; font-size: 14px; color: #92400e; border-radius: 0 4px 4px 0; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #e11d48; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 10px; }
+            .security-note { border-left: 4px solid #e11d48; background: #fff1f2; padding: 15px; margin-top: 25px; font-size: 14px; color: #9f1239; border-radius: 0 4px 4px 0; }
         </style>
     </head>
     <body>
@@ -88,22 +88,72 @@ export async function sendEmail({ to, subject, body, code, title, actionText }: 
         },
     });
 
-    try {
-        const htmlContent = renderEmail({ title: title || subject, body, code, actionText });
+    // Identify email type for logging
+    let emailType = 'NOTIFICATION';
+    if (subject.toLowerCase().includes('verify') || subject.toLowerCase().includes('welcome')) emailType = 'EMAIL_VERIFICATION';
+    else if (subject.toLowerCase().includes('reset')) emailType = 'PASSWORD_RESET';
+    else if (subject.toLowerCase().includes('verification code') || subject.toLowerCase().includes('2fa')) emailType = '2FA_CODE';
+    else if (subject.toLowerCase().includes('security') || subject.toLowerCase().includes('alert')) emailType = 'SECURITY_ALERT';
 
-        const mailOptions = {
-            from: EMAIL_FROM,
+    const maxRetries = 2;
+    let attempts = 0;
+    let lastError = null;
+
+    while (attempts < maxRetries) {
+        attempts++;
+        try {
+            const htmlContent = renderEmail({ title: title || subject, body, code, actionText });
+
+            const mailOptions = {
+                from: EMAIL_FROM,
+                to,
+                subject,
+                html: htmlContent,
+                text: body + (code ? ` Code: ${code}` : ''), // Fallback text version
+            };
+
+            const info = await transporter.sendMail(mailOptions);
+
+            // Log Success
+            try {
+                const EmailLog = (await import('@/models/EmailLog')).default;
+                await EmailLog.create({
+                    to,
+                    subject,
+                    type: emailType,
+                    status: 'SENT',
+                    attempts,
+                    sentAt: new Date()
+                });
+            } catch (logErr) {
+                console.error('Failed to log email success:', logErr);
+            }
+
+            return info;
+        } catch (error: any) {
+            lastError = error;
+            console.error(`Email attempt ${attempts} failed:`, error.message);
+            if (attempts < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait before retry
+            }
+        }
+    }
+
+    // Log Failure after all retries
+    try {
+        const EmailLog = (await import('@/models/EmailLog')).default;
+        await EmailLog.create({
             to,
             subject,
-            html: htmlContent,
-            text: body + (code ? ` Code: ${code}` : ''), // Fallback text version
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent: ' + info.response);
-        return info;
-    } catch (error) {
-        console.error('Error sending email:', error);
-        throw error;
+            type: emailType,
+            status: 'FAILED',
+            error: lastError?.message || 'Unknown error',
+            attempts,
+            sentAt: new Date()
+        });
+    } catch (logErr) {
+        console.error('Failed to log email failure:', logErr);
     }
+
+    throw lastError;
 }

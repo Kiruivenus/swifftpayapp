@@ -26,7 +26,11 @@ export async function POST(request: Request) {
         })).then(results => results.find(r => r !== null));
 
         if (!validOtp) {
-            return NextResponse.json({ message: 'Invalid or expired verification code' }, { status: 400 });
+            return NextResponse.json({
+                ok: false,
+                message: 'Invalid or expired verification code',
+                code: 'INVALID_OTP'
+            }, { status: 400 });
         }
 
         // Find and update user

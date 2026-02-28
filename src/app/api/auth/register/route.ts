@@ -83,17 +83,18 @@ export async function POST(request: Request) {
             usernameNormalized,
             email,
             emailNormalized,
-            phoneNumber: phone, // Original for display if needed
+            phoneNumber: phone,
             phoneE164,
             password: hashedPassword,
             countryCode,
             currency,
             inviteCode,
-            role: 'USER',
+            role: 'user', // Default role is 'user' (lowercase as per schema)
             kesBalance: 0,
             usdtBalance: 0,
             status: 'PENDING_VERIFICATION',
             emailVerified: false,
+            email2FAEnabled: true,
             biometricEnabled: false,
             notificationPrefs: {
                 enabled: false,
@@ -115,21 +116,32 @@ export async function POST(request: Request) {
         });
 
         // Send Email
-        await sendEmail({
-            to: email,
-            subject: 'Verify your email - SwiftPay',
-            title: 'Welcome to SwiftPay!',
-            body: `Thank you for joining SwiftPay. To complete your registration and secure your account, please use the 6-digit verification code below.`,
-            code: code,
-        });
+        try {
+            await sendEmail({
+                to: email,
+                subject: 'Verify your email - SwiftPay',
+                title: 'Welcome to SwiftPay!',
+                body: `Thank you for joining SwiftPay. To complete your registration and secure your account, please use the 6-digit verification code below.`,
+                code: code,
+            });
+        } catch (emailErr) {
+            console.error('Failed to send welcome email:', emailErr);
+            // We don't fail registration if email fails (they can resend), but it's logged
+        }
 
         return NextResponse.json({
+            ok: true,
             message: 'Registration successful. Please verify your email.',
             email: newUser.email,
             status: 'PENDING_VERIFICATION'
         });
 
     } catch (error: any) {
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        console.error('Registration API Error:', error);
+        return NextResponse.json({
+            ok: false,
+            message: 'An unexpected error occurred during registration.',
+            code: 'SERVER_ERROR'
+        }, { status: 500 });
     }
 }

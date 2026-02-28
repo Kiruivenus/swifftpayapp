@@ -66,10 +66,12 @@ export async function POST(request: Request) {
 
         // 6. Check Device Trust
         let isTrusted = false;
-        if (deviceId) {
+        let deviceToken = request.cookies.get('swiftpay_td')?.value;
+
+        if (deviceToken) {
             const trustedDevice = await TrustedDevice.findOne({
                 userId: user._id,
-                deviceId: deviceId,
+                _id: deviceToken, // Check if the token (ID) is valid
                 revokedAt: null
             });
             if (trustedDevice) {
@@ -79,26 +81,20 @@ export async function POST(request: Request) {
             }
         }
 
-        // SECURITY: If not a trusted device, disable transaction biometrics
-        if (!isTrusted && user.biometricEnabled) {
-            user.biometricEnabled = false;
-            await user.save();
-        }
+        // 7. Check 2FA (Email based)
+        if (user.email2FAEnabled && !isTrusted) {
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        // 7. Check 2FA
-        if (user.twoFactorEnabled) {
-            if (!isTrusted) {
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
-                const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            await Otp.create({
+                identifier: emailNormalized,
+                code,
+                type: '2FA_LOGIN',
+                expiresAt
+            });
 
-                await Otp.create({
-                    identifier: emailNormalized,
-                    code,
-                    type: '2FA_LOGIN',
-                    expiresAt
-                });
-
-                const { sendEmail } = await import('@/lib/email');
+            const { sendEmail } = await import('@/lib/email');
+            try {
                 await sendEmail({
                     to: user.email,
                     subject: 'Security: Your Login Verification Code - SwiftPay',
@@ -106,13 +102,16 @@ export async function POST(request: Request) {
                     body: 'A login attempt was made from a new device. Please use the verification code below to authorize this session.',
                     code: code
                 });
-
-                return NextResponse.json({
-                    status: '2FA_REQUIRED',
-                    email: user.email,
-                    message: 'Two-factor authentication required'
-                });
+            } catch (emailErr) {
+                console.error('Failed to send 2FA email:', emailErr);
             }
+
+            return NextResponse.json({
+                ok: true,
+                status: '2FA_REQUIRED',
+                email: user.email,
+                message: 'Two-factor authentication required'
+            });
         }
 
         // 8. Create Session
