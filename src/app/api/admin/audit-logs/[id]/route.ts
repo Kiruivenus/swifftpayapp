@@ -6,7 +6,7 @@ import { PERMISSIONS } from '@/lib/rbac';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const { error } = await validateAdmin(req, PERMISSIONS.VIEW_AUDIT_LOGS);
+    const { error } = await validateAdmin(req, PERMISSIONS.AUDIT_LOGS);
     if (error) return error;
 
     try {
