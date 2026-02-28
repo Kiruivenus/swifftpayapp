@@ -7,7 +7,10 @@ import {
     ArrowDownRight,
     TrendingUp,
     Clock,
-    ExternalLink
+    ExternalLink,
+    ShieldAlert,
+    Bell,
+    Settings
 } from 'lucide-react';
 
 export default function DashboardPage() {
