@@ -18,9 +18,14 @@ import { useRouter } from 'next/navigation';
 export default function MobileOnlyPage() {
     const router = useRouter();
 
-    const handleLogout = () => {
-        // In a real app, clear cookies/token
-        router.push('/login');
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+            router.push('/login');
+        }
     };
 
     return (

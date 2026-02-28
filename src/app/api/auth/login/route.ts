@@ -142,12 +142,22 @@ export async function POST(request: Request) {
             'security'
         );
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             token,
             sessionId: session._id,
             role: user.role.toLowerCase(),
             username: user.username
         });
+
+        // Set cookie for web authentication
+        response.cookies.set('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 // 1 day
+        });
+
+        return response;
 
     } catch (error: any) {
         console.error('Login Error:', error);

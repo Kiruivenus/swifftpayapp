@@ -15,6 +15,8 @@ import {
     RefreshCcw
 } from 'lucide-react';
 
+import LogoutButton from '@/components/admin/LogoutButton';
+
 export default function AdminLayout({
     children,
 }: {
@@ -53,10 +55,7 @@ export default function AdminLayout({
                 </nav>
 
                 <div className="p-4 border-t border-slate-800">
-                    <button className="flex items-center gap-3 w-full p-3 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all font-medium text-sm">
-                        <LogOut size={20} />
-                        Logout
-                    </button>
+                    <LogoutButton />
                 </div>
             </aside>
 
