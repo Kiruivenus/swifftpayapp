@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
         const { email, code } = await request.json();
 
         if (!email || !code) {
-            return NextResponse.json({ ok: false, message: 'Email and code are required' }, { status: 400 });
+            return NextResponse.json({ ok: false, message: 'Please enter both your email and reset code.' }, { status: 400 });
         }
 
         const emailNormalized = email.trim().toLowerCase();
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         if (!validOtp) {
             return NextResponse.json({
                 ok: false,
-                message: 'Invalid or expired reset code',
+                message: 'The reset code is invalid or has expired. Please request a new one.',
                 code: 'INVALID_RESET_CODE'
             }, { status: 400 });
         }
@@ -40,6 +40,6 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Verify Reset Code Error:', error);
-        return NextResponse.json({ ok: false, message: 'Server error' }, { status: 500 });
+        return NextResponse.json({ ok: false, message: 'Something went wrong. Please try again later.' }, { status: 500 });
     }
 }

@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
+import Session from '@/models/Session';
 import jwt from 'jsonwebtoken';
 
 export async function POST(request: NextRequest) {
@@ -10,7 +11,10 @@ export async function POST(request: NextRequest) {
         const { email, code } = await request.json();
 
         if (!email || !code) {
-            return NextResponse.json({ ok: false, message: 'Email and code are required' }, { status: 400 });
+            return NextResponse.json({
+                ok: false,
+                message: 'Please enter both your email and verification code.'
+            }, { status: 400 });
         }
 
         const emailNormalized = email.trim().toLowerCase();
@@ -26,35 +30,39 @@ export async function POST(request: NextRequest) {
         if (!validOtp) {
             return NextResponse.json({
                 ok: false,
-                message: 'Invalid or expired verification code',
+                message: 'The verification code is invalid or has expired. Please request a new one.',
                 code: 'INVALID_OTP'
             }, { status: 400 });
         }
 
-        // Find and update user
+        // 2. Find and update user
         const user = await User.findOne({ emailNormalized });
         if (!user) {
-            return NextResponse.json({ message: 'User not found' }, { status: 404 });
+            return NextResponse.json({
+                ok: false,
+                message: 'We could not find an account with this email address.'
+            }, { status: 404 });
         }
 
         user.emailVerified = true;
         user.status = 'ACTIVE';
         await user.save();
 
-        // Delete the OTP
+        // 3. Delete the used OTP
         await Otp.deleteOne({ _id: validOtp._id });
 
-        // IMPORTANT: Create a Session so the user can actually load data (Android/Web)
-        const Session = (await import('@/models/Session')).default;
-        const session = await Session.create({
+        // 4. Create session for immediate app access
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+        await Session.create({
             userId: user._id,
-            sessionType: 'web', // Defaulting to web, will be updated on next full login
+            sessionType: 'mobile',
             status: 'active',
-            deviceName: 'Initial Verification',
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
+            deviceName: 'Registration Verification',
+            platform: 'Mobile',
+            expiresAt
         });
 
-        // Generate token for auto-login
+        // 5. Generate JWT token for auto-login
         const token = jwt.sign(
             {
                 id: user._id,
@@ -68,14 +76,17 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             ok: true,
-            message: 'Email verified successfully',
+            message: 'Email verified successfully! Welcome to SwiftPay.',
             token,
-            sessionId: session._id,
             role: user.role,
             username: user.username
         });
 
     } catch (error: any) {
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        console.error('Email verify error:', error);
+        return NextResponse.json({
+            ok: false,
+            message: 'Something went wrong. Please try again later.'
+        }, { status: 500 });
     }
 }

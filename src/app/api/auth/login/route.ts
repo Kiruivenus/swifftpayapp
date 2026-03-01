@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         const { email, password, deviceId, deviceInfo, sessionType = 'mobile' } = await request.json();
 
         if (!email || !password) {
-            return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+            return NextResponse.json({ message: 'Please enter both your email and password.' }, { status: 400 });
         }
 
         const emailNormalized = email.trim().toLowerCase();
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         // 2. Find user
         const user = await User.findOne({ emailNormalized });
         if (!user) {
-            return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
+            return NextResponse.json({ message: 'The email or password you entered is incorrect.' }, { status: 401 });
         }
 
         // 3. IP Geo Check (New Policy)

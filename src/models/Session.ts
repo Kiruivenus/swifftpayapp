@@ -15,7 +15,7 @@ const SessionSchema = new Schema({
     },
     refreshTokenHash: {
         type: String,
-        required: true,
+        default: 'N/A', // Not using refresh tokens yet
     },
     status: {
         type: String,

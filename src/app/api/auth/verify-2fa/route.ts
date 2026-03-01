@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
         const { email, code, deviceInfo } = await request.json();
 
         if (!email || !code) {
-            return NextResponse.json({ ok: false, message: 'Email and code are required' }, { status: 400 });
+            return NextResponse.json({ ok: false, message: 'Please enter both your email and verification code.' }, { status: 400 });
         }
 
         const emailNormalized = email.trim().toLowerCase();
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         if (!validOtp) {
             return NextResponse.json({
                 ok: false,
-                message: 'Invalid or expired 2FA code',
+                message: 'The verification code is invalid or has expired. Please request a new one.',
                 code: 'INVALID_2FA'
             }, { status: 400 });
         }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         // 2. Find user
         const user = await User.findOne({ emailNormalized });
         if (!user) {
-            return NextResponse.json({ ok: false, message: 'User not found' }, { status: 404 });
+            return NextResponse.json({ ok: false, message: 'We could not find an account with this email address.' }, { status: 404 });
         }
 
         // 3. Delete OTP (consume it)
@@ -105,6 +105,6 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Verify 2FA Error:', error);
-        return NextResponse.json({ ok: false, message: error.message || 'Server error' }, { status: 500 });
+        return NextResponse.json({ ok: false, message: 'Something went wrong. Please try again later.' }, { status: 500 });
     }
 }
