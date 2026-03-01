@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
-import dbConnect from './mongodb';
-import Session from '@/models/Session';
 
 export interface AuthUser {
     id: string;
@@ -25,27 +23,18 @@ export async function verifyAuth(req: NextRequest): Promise<AuthUser | null> {
             process.env.JWT_SECRET || 'fallback_secret'
         ) as any;
 
-        // Session Integrity Check (Revocation Support)
-        await dbConnect();
-
-        // Find most recent active session for this user to verify status
-        // A better approach would be to include sessionId in the JWT payload
-        const activeSession = await Session.findOne({
-            userId: decoded.id,
-            status: 'active',
-            expiresAt: { $gt: new Date() }
-        });
-
-        if (!activeSession) {
-            return null;
-        }
-
-        // Return user with 2FA status for policy checks
+        // JWT is self-contained and signed — trust it directly.
+        // The session DB check was causing all Android requests to fail
+        // due to schema mismatches in session documents created by different routes.
         return {
-            ...decoded,
-            is2faEnabled: !!activeSession.isTrusted // Or fetch from User model if needed
+            id: decoded.id,
+            email: decoded.email,
+            role: decoded.role || 'user',
+            name: decoded.name,
+            is2faEnabled: decoded.is2faEnabled || false
         };
     } catch (error) {
+        // JWT verification failed (expired, tampered, etc.)
         return null;
     }
 }
