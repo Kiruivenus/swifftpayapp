@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
-import User from '@/models/User';
-import Wallet from '@/models/Wallet';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -14,48 +13,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     try {
         const { reason } = await req.json();
-        if (!reason) return NextResponse.json({ message: 'Rejection reason is required' }, { status: 400 });
+        if (!reason) {
+            return NextResponse.json({ message: 'Please provide a reason for rejection.' }, { status: 400 });
+        }
 
         await dbConnect();
 
         const tx = await Transaction.findById(id);
-        if (!tx) return NextResponse.json({ message: 'Withdrawal request not found' }, { status: 404 });
-
-        if (tx.type !== 'WITHDRAW' || tx.status !== 'PENDING') {
-            return NextResponse.json({ message: `Invalid transaction status: ${tx.status}` }, { status: 400 });
+        if (!tx) {
+            return NextResponse.json({ message: 'Withdrawal request not found.' }, { status: 404 });
         }
 
-        // 1. Update Transaction
+        if (tx.type !== 'WITHDRAW' || tx.status !== 'PENDING') {
+            return NextResponse.json({
+                message: `This withdrawal cannot be rejected. Current status: ${tx.status}`
+            }, { status: 400 });
+        }
+
+        // Mark transaction as FAILED — this automatically "releases" the pending hold
+        // because the balance API only subtracts PENDING withdrawals from available balance.
+        // No balance adjustment needed since the amount was never actually deducted.
         tx.status = 'FAILED';
         tx.rejectionReason = reason;
         tx.processedAt = new Date();
         tx.processedBy = admin.id;
         await tx.save();
 
-        // 2. Update Wallet (Move from locked back to available)
-        let wallet = await Wallet.findOne({ userId: tx.userId });
-        if (!wallet) {
-            // Fallback: Re-add to User legacy balance
-            const user = await User.findById(tx.userId);
-            if (user) {
-                if (tx.currency === 'KES') {
-                    user.kesBalance += tx.amount;
-                } else {
-                    user.usdtBalance += tx.amount;
-                }
-                await user.save();
-            }
-        } else {
-            if (tx.currency === 'KES') {
-                wallet.lockedKES = Math.max(0, wallet.lockedKES - tx.amount);
-                wallet.kesBalance += tx.amount;
-            } else {
-                wallet.lockedUSDT = Math.max(0, wallet.lockedUSDT - tx.amount);
-                wallet.usdtBalance += tx.amount;
-            }
-            wallet.lastUpdated = new Date();
-            await wallet.save();
-        }
+        // Notify the user
+        await sendNotification(
+            tx.userId,
+            'Withdrawal Rejected',
+            `Your withdrawal of ${tx.amount} ${tx.currency} was rejected. Reason: ${reason}. The funds are available in your account.`,
+            'FINANCE'
+        );
 
         // Audit log
         const ip = req.headers.get('x-forwarded-for') || 'Unknown';
@@ -79,9 +69,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             severity: 'WARNING'
         });
 
-        return NextResponse.json({ success: true, message: 'Withdrawal rejected. Funds returned to user.' });
+        return NextResponse.json({
+            success: true,
+            message: 'Withdrawal rejected. Pending hold has been released.'
+        });
 
     } catch (err: any) {
-        return NextResponse.json({ message: err.message }, { status: 500 });
+        console.error('Reject withdrawal error:', err);
+        return NextResponse.json({ message: 'Something went wrong. Please try again.' }, { status: 500 });
     }
 }
