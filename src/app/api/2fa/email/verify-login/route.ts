@@ -17,20 +17,12 @@ export async function POST(req: NextRequest) {
 
         const emailNormalized = email.trim().toLowerCase();
 
-        const otps = await Otp.find({
+        const validOtp = await Otp.findOne({
             identifier: emailNormalized,
             type: '2FA_LOGIN',
+            code: code.trim(),
             expiresAt: { $gt: new Date() }
-        }).sort({ createdAt: -1 });
-
-        const bcrypt = await import('bcryptjs');
-        let validOtp = null;
-        for (const otp of otps) {
-            if (await bcrypt.compare(code, otp.code)) {
-                validOtp = otp;
-                break;
-            }
-        }
+        });
 
         if (!validOtp) {
             return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });
@@ -62,7 +54,7 @@ export async function POST(req: NextRequest) {
 
         // Create final token
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role },
+            { id: user._id, email: user.email, role: user.role, name: user.fullName || user.username || 'User' },
             process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: '1d' }
         );

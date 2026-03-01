@@ -17,21 +17,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Verification code is required' }, { status: 400 });
         }
 
-        const otps = await Otp.find({
-            identifier: user.email,
+        const validOtp = await Otp.findOne({
+            identifier: user.email.toLowerCase(),
             type: '2FA_ENABLE',
+            code: code.trim(),
             expiresAt: { $gt: new Date() }
-        }).sort({ createdAt: -1 });
-
-        const bcrypt = await import('bcryptjs');
-        let validOtp = null;
-        for (const otp of otps) {
-            const isMatch = await bcrypt.compare(code, otp.code);
-            if (isMatch) {
-                validOtp = otp;
-                break;
-            }
-        }
+        });
 
         if (!validOtp) {
             return NextResponse.json({ message: 'Invalid or expired code' }, { status: 400 });

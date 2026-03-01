@@ -3,7 +3,6 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
     try {
@@ -17,16 +16,12 @@ export async function POST(request: NextRequest) {
         const emailNormalized = email.trim().toLowerCase();
 
         // 1. Verify OTP
-        const otps = await Otp.find({
+        const validOtp = await Otp.findOne({
             identifier: emailNormalized,
             type: 'EMAIL_VERIFICATION',
+            code: code.trim(),
             expiresAt: { $gt: new Date() }
         });
-
-        const validOtp = await Promise.all(otps.map(async (otp) => {
-            const isMatch = await bcrypt.compare(code, otp.code);
-            return isMatch ? otp : null;
-        })).then(results => results.find(r => r !== null));
 
         if (!validOtp) {
             return NextResponse.json({

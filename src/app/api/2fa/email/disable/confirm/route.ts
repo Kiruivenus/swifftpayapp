@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
@@ -20,20 +19,12 @@ export async function POST(req: NextRequest) {
         await dbConnect();
 
         // Find the most recent OTP for this user
-        const otps = await Otp.find({
-            identifier: user.email,
+        const validOtp = await Otp.findOne({
+            identifier: user.email.toLowerCase(),
             type: '2FA_DISABLE',
+            code: code.trim(),
             expiresAt: { $gt: new Date() }
-        }).sort({ createdAt: -1 });
-
-        let validOtp = null;
-        for (const otp of otps) {
-            const isMatch = await bcrypt.compare(code, otp.code);
-            if (isMatch) {
-                validOtp = otp;
-                break;
-            }
-        }
+        });
 
         if (!validOtp) {
             return NextResponse.json({ message: 'Invalid or expired verification code' }, { status: 400 });
