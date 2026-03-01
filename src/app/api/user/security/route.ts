@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { verifyAuth } from '@/lib/auth';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
     try {
