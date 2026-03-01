@@ -3,7 +3,6 @@ import { verifyAuth } from './auth';
 import { hasPermission, isAdmin, Role } from './rbac';
 import SecurityPolicy from '@/models/SecurityPolicy';
 import SecurityEvent from '@/models/SecurityEvent';
-import Session from '@/models/Session';
 import { lookupIp } from './geo';
 
 export async function validateAdmin(req: NextRequest, permission?: string) {
@@ -65,20 +64,6 @@ export async function validateAdmin(req: NextRequest, permission?: string) {
                 code: '2FA_REQUIRED',
                 message: 'Mandatory 2FA is enabled for admins. Please enable 2FA in your security settings to proceed.'
             }, { status: 403 }), user: null
-        };
-    }
-
-    // 2. Session Integrity Check
-    // Get the sessionId from the JWT or look up the most recent active session for this user
-    // Since verifyAuth returns user payload, we can check Session status in DB
-    const activeSession = await Session.findOne({ userId: user.id, status: 'active' }).sort({ createdAt: -1 });
-    if (!activeSession) {
-        return {
-            error: NextResponse.json({
-                success: false,
-                code: 'SESSION_REVOKED',
-                message: 'Your session has been revoked or expired. Please log in again.'
-            }, { status: 401 }), user: null
         };
     }
 
