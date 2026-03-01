@@ -22,9 +22,9 @@ export async function GET(req: NextRequest) {
 
         let targetUser;
         if (type === 'EMAIL') {
-            targetUser = await User.findOne({ email: query.toLowerCase() });
+            targetUser = await User.findOne({ emailNormalized: query.trim().toLowerCase() });
         } else {
-            targetUser = await User.findById(query);
+            targetUser = await User.findById(query.trim());
         }
 
         if (!targetUser) {

@@ -31,6 +31,15 @@ export async function POST(req: NextRequest) {
         await User.findByIdAndUpdate(user.id, { twoFactorEnabled: false });
         await Otp.deleteOne({ _id: validOtp._id });
 
+        // Trigger Notification
+        const { sendNotification } = await import('@/lib/notifications');
+        await sendNotification(
+            user.id,
+            "Security Alert",
+            "Two-Factor Authentication (2FA) has been disabled on your account.",
+            'SECURITY'
+        );
+
         return NextResponse.json({ message: 'Two-Factor Authentication disabled successfully' });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });

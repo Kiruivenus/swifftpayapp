@@ -31,6 +31,15 @@ export async function POST(req: NextRequest) {
         await User.findByIdAndUpdate(user.id, { twoFactorEnabled: true });
         await Otp.deleteOne({ _id: validOtp._id });
 
+        // Trigger Notification
+        const { sendNotification } = await import('@/lib/notifications');
+        await sendNotification(
+            user.id,
+            "Security Alert",
+            "Two-Factor Authentication (2FA) has been enabled on your account.",
+            'SECURITY'
+        );
+
         return NextResponse.json({ message: '2FA enabled successfully' });
     } catch (error: any) {
         return NextResponse.json({ message: error.message }, { status: 500 });

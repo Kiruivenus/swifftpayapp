@@ -121,10 +121,11 @@ export async function POST(req: NextRequest) {
             // Trigger actual sending (since we don't have a background worker)
             const { sendNotification } = await import('@/lib/notifications');
             for (const recipient of recipients) {
-                if (channels.push) {
+                if (channels.push || channels.email) {
                     // Fire and forget (don't await each to avoid timeout)
                     sendNotification(recipient._id.toString(), title, message, 'BROADCAST', {
-                        push: true,
+                        push: !!channels.push,
+                        email: !!channels.email,
                         inApp: false, // already created above
                         refId: broadcast._id.toString()
                     }).catch(e => console.error(`Broadcast failed for ${recipient._id}:`, e));

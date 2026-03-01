@@ -36,6 +36,15 @@ export async function POST(req: NextRequest) {
             }
             const pinHash = await bcrypt.hash(pin, 10);
             await User.findByIdAndUpdate(user.id, { pinHash, isPinSet: true });
+
+            // Trigger Notification
+            await sendNotification(
+                user.id,
+                "Security Alert",
+                "A new Login PIN has been set for your account.",
+                'SECURITY'
+            );
+
             return NextResponse.json({ message: 'PIN updated successfully' });
         }
 
@@ -56,11 +65,29 @@ export async function POST(req: NextRequest) {
 
             const newPinHash = await bcrypt.hash(newPin, 10);
             await User.findByIdAndUpdate(user.id, { pinHash: newPinHash });
+
+            // Trigger Notification
+            await sendNotification(
+                user.id,
+                "Security Alert",
+                "Your Login PIN was recently changed.",
+                'SECURITY'
+            );
+
             return NextResponse.json({ message: 'PIN changed successfully' });
         }
 
         if (action === 'toggle-biometric') {
             await User.findByIdAndUpdate(user.id, { biometricEnabled: enabled });
+
+            // Trigger Notification
+            await sendNotification(
+                user.id,
+                "Security Alert",
+                `Biometric login has been ${enabled ? 'enabled' : 'disabled'}.`,
+                'SECURITY'
+            );
+
             return NextResponse.json({ message: `Biometrics ${enabled ? 'enabled' : 'disabled'}` });
         }
 

@@ -36,15 +36,44 @@ export async function POST(req: Request) {
                 await User.findByIdAndUpdate(transaction.userId, {
                     $inc: { kesBalance: amount }
                 });
+
+                // Trigger Success Notification
+                try {
+                    const { sendNotification } = await import('@/lib/notifications');
+                    await sendNotification(
+                        transaction.userId,
+                        "Deposit Successful",
+                        `Your deposit of ${amount} KES via M-Pesa was successful. Receipt: ${mpesaReceiptNumber}`,
+                        'FINANCE'
+                    );
+                } catch (notifyErr) {
+                    console.error('Deposit Success Notification Error:', notifyErr);
+                }
             }
 
             console.log(`Deposit successful for ${checkoutRequestID}`);
         } else {
             // Failed
-            await Transaction.findOneAndUpdate(
+            const failedTx = await Transaction.findOneAndUpdate(
                 { checkoutRequestID },
-                { status: 'FAILED' }
+                { status: 'FAILED' },
+                { returnDocument: 'after' }
             );
+
+            if (failedTx) {
+                // Trigger Failure Notification
+                try {
+                    const { sendNotification } = await import('@/lib/notifications');
+                    await sendNotification(
+                        failedTx.userId,
+                        "Deposit Failed",
+                        `Your deposit of ${failedTx.amount} KES was unsuccessful. Reason: ${result.ResultDesc}`,
+                        'FINANCE'
+                    );
+                } catch (notifyErr) {
+                    console.error('Deposit Failure Notification Error:', notifyErr);
+                }
+            }
             console.log(`Deposit failed for ${checkoutRequestID}: ${result.ResultDesc}`);
         }
 

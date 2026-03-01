@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
 
         const sessions = await Session.find({
             userId: user.id,
-            isActive: true
-        }).sort({ lastActive: -1 });
+            status: 'active'
+        }).sort({ lastSeenAt: -1 });
 
         const mappedSessions = sessions.map(s => ({
             ...s.toObject(),
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         if (logoutAll) {
             await Session.updateMany(
                 { userId: user.id },
-                { isActive: false, revokedAt: new Date() }
+                { status: 'revoked', revokedAt: new Date() }
             );
             return NextResponse.json({ message: 'Logged out from all devices' });
         }
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         if (logoutAllOthers) {
             await Session.updateMany(
                 { userId: user.id, token: { $ne: currentToken } },
-                { isActive: false, revokedAt: new Date() }
+                { status: 'revoked', revokedAt: new Date() }
             );
             return NextResponse.json({ message: 'Other sessions logged out' });
         }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         if (sessionId) {
             await Session.findOneAndUpdate(
                 { _id: sessionId, userId: user.id },
-                { isActive: false, revokedAt: new Date() }
+                { status: 'revoked', revokedAt: new Date() }
             );
             return NextResponse.json({ message: 'Session logged out' });
         }

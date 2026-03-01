@@ -73,9 +73,9 @@ export async function POST(req: NextRequest) {
                     osVersion: deviceInfo?.osVersion,
                     appVersion: deviceInfo?.appVersion,
                     ipAddress,
-                    isActive: true,
+                    status: 'active',
                     revokedAt: null,
-                    lastActive: new Date()
+                    lastSeenAt: new Date()
                 },
                 { upsert: true, new: true }
             );
@@ -88,8 +88,8 @@ export async function POST(req: NextRequest) {
                 osVersion: deviceInfo?.osVersion,
                 appVersion: deviceInfo?.appVersion,
                 ipAddress,
-                isActive: true,
-                lastActive: new Date()
+                status: 'active',
+                lastSeenAt: new Date()
             });
         }
 

@@ -64,8 +64,9 @@ export async function POST(req: NextRequest) {
 
             // Find recipient
             let recipientUser;
+            const cleanRecipient = recipient.trim().toLowerCase();
             if (recipient_type === 'EMAIL') {
-                recipientUser = await User.findOne({ email: recipient }).session(session);
+                recipientUser = await User.findOne({ emailNormalized: cleanRecipient }).session(session);
             } else {
                 recipientUser = await User.findById(recipient).session(session);
             }
