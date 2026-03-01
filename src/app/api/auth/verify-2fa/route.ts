@@ -1,8 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Otp from '@/models/Otp';
 import TrustedDevice from '@/models/TrustedDevice';
+import Session from '@/models/Session';
 
 export async function POST(request: NextRequest) {
     try {
@@ -37,34 +39,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ ok: false, message: 'User not found' }, { status: 404 });
         }
 
-        // 3. Create TrustedDevice entry
-        const trustedDevice = await TrustedDevice.create({
+        // 3. Delete OTP (consume it)
+        await Otp.deleteOne({ _id: validOtp._id });
+
+        // 4. Create or update TrustedDevice entry
+        const deviceId = 'web-' + Math.random().toString(36).substring(2, 11);
+        await TrustedDevice.create({
             userId: user._id,
-            deviceId: 'web-' + Math.random().toString(36).substring(2, 11), // Simple web device ID
+            deviceId,
             deviceName: deviceInfo?.name || 'Trusted Web Browser',
             platform: deviceInfo?.platform || 'Web',
             lastUsedAt: new Date()
         });
 
-        // 4. Delete OTP
-        await Otp.deleteOne({ _id: validOtp._id });
-
-        // 5. Create Session
-        const Session = (await import('@/models/Session')).default;
+        // 5. Generate JWT Token
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-
-        const session = await Session.create({
-            userId: user._id,
-            sessionType: 'web',
-            status: 'active',
-            isTrusted: true,
-            deviceName: deviceInfo?.name || 'Trusted Web Browser',
-            platform: deviceInfo?.platform || 'Web',
-            expiresAt
-        });
-
-        // 6. Generate JWT Token
-        const jwt = (await import('jsonwebtoken')).default;
         const token = jwt.sign(
             {
                 id: user._id,
@@ -76,23 +65,28 @@ export async function POST(request: NextRequest) {
             { expiresIn: '24h' }
         );
 
+        // 6. Create Session (with required refreshTokenHash)
+        await Session.create({
+            userId: user._id,
+            sessionType: 'web',
+            status: 'active',
+            refreshTokenHash: 'N/A', // Not using refresh tokens
+            isTrusted: true,
+            deviceId,
+            deviceName: deviceInfo?.name || 'Trusted Web Browser',
+            platform: deviceInfo?.platform || 'Web',
+            expiresAt
+        });
+
         const response = NextResponse.json({
             ok: true,
-            message: 'Device authorized successfully',
+            message: 'Login successful',
             token,
-            sessionId: session._id,
             role: user.role,
             username: user.username
         });
 
-        // 7. Set Cookies
-        response.cookies.set('swiftpay_td', trustedDevice._id.toString(), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 365 // 1 year
-        });
-
+        // 7. Set auth cookies
         response.cookies.set('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -100,10 +94,17 @@ export async function POST(request: NextRequest) {
             maxAge: 60 * 60 * 24 // 24 hours
         });
 
+        response.cookies.set('swiftpay_td', deviceId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 365 // 1 year
+        });
+
         return response;
 
     } catch (error: any) {
         console.error('Verify 2FA Error:', error);
-        return NextResponse.json({ ok: false, message: 'Server error' }, { status: 500 });
+        return NextResponse.json({ ok: false, message: error.message || 'Server error' }, { status: 500 });
     }
 }

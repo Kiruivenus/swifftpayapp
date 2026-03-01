@@ -77,19 +77,8 @@ export default function LoginPage() {
 
             const data = await res.json();
             if (data.ok) {
-                // Retry login now that device is trusted
-                const loginRes = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password }),
-                });
-                const loginData = await loginRes.json();
-                if (loginData.token) {
-                    window.location.href = '/mobile-only';
-                } else {
-                    setError(loginData.message || 'Login failed after verification');
-                    setLoading(false);
-                }
+                // Token & cookie are set by the server — just redirect
+                window.location.href = '/mobile-only';
             } else {
                 setError(data.message || 'Invalid 2FA code');
                 setLoading(false);
@@ -188,7 +177,7 @@ export default function LoginPage() {
                                     Enter the code sent to your email to verify this is you.
                                 </p>
                             </div>
-                            
+
                             <input
                                 type="text"
                                 maxLength={6}
