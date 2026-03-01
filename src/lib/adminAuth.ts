@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from './auth';
 import { hasPermission, isAdmin, Role } from './rbac';
+import dbConnect from './mongodb';
 import SecurityPolicy from '@/models/SecurityPolicy';
 import SecurityEvent from '@/models/SecurityEvent';
 import { lookupIp } from './geo';
@@ -27,6 +28,9 @@ export async function validateAdmin(req: NextRequest, permission?: string) {
             }, { status: 403 }), user: null
         };
     }
+
+    // Connect to DB before any Mongoose queries
+    await dbConnect();
 
     // 1. Check Global Security Policies
     const policy = await (SecurityPolicy as any).getSettings();
