@@ -66,12 +66,13 @@ export async function POST(request: NextRequest) {
 
         // 6. Check Device Trust
         let isTrusted = false;
-        let deviceToken = request.cookies.get('swiftpay_td')?.value;
+        // Check web cookie or mobile deviceId
+        const effectiveDeviceId = request.cookies.get('swiftpay_td')?.value || deviceId;
 
-        if (deviceToken) {
+        if (effectiveDeviceId) {
             const trustedDevice = await TrustedDevice.findOne({
                 userId: user._id,
-                _id: deviceToken, // Check if the token (ID) is valid
+                deviceId: effectiveDeviceId, // Fix: Use deviceId instead of _id to avoid CastError
                 revokedAt: null
             });
             if (trustedDevice) {
