@@ -23,6 +23,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
 
+        // 0. Ensure user has filled profile details (fullName, dob, nationality)
+        if (!dbUser.fullName || !dbUser.dob || !dbUser.nationalityName) {
+            return NextResponse.json({
+                message: 'Please complete your profile (Full Name, Date of Birth, and Nationality) before submitting KYC.'
+            }, { status: 400 });
+        }
+
         // 1. Check if user already has a pending or approved KYC
         const existingRequest = await KycRequest.findOne({
             userId: user.id,
@@ -32,6 +39,19 @@ export async function POST(req: NextRequest) {
         if (existingRequest) {
             return NextResponse.json({
                 message: existingRequest.status === 'APPROVED' ? 'You are already verified' : 'KYC is already under review'
+            }, { status: 400 });
+        }
+
+        // 1b. Check if document number is already used by another user (Duplicate Check)
+        const duplicateDocument = await KycRequest.findOne({
+            documentNumber,
+            status: { $in: ['PENDING', 'APPROVED'] },
+            userId: { $ne: user.id } // exclude self if they are resubmitting (though 1. handles that)
+        });
+
+        if (duplicateDocument) {
+            return NextResponse.json({
+                message: 'This document has already been used to verify an account.'
             }, { status: 400 });
         }
 
