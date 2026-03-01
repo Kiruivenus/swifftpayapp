@@ -35,16 +35,51 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
-        // 2. Save images
-        const frontImageUrl = await saveImage(frontImage, 'kyc/front');
-        let backImageUrl = null;
-        if (backImage) {
-            backImageUrl = await saveImage(backImage, 'kyc/back');
-        }
-        const selfieImageUrl = await saveImage(selfieImage, 'kyc/selfie');
+        // 2. Validate Images
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-        // 3. Create KYC Request
-        const kycReq = await KycRequest.create({
+        const validateImage = (base64: string, name: string) => {
+            if (!base64) return `${name} image is required`;
+
+            // Approximate size from base64 (3/4 of string length)
+            const size = base64.length * (3 / 4);
+            if (size > MAX_SIZE) return `${name} image is too large (max 5MB)`;
+
+            // Check mime type
+            if (base64.startsWith('data:')) {
+                const mime = base64.split(';')[0].split(':')[1];
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) {
+                    return `${name} image format not supported. Use JPEG, PNG or WEBP.`;
+                }
+            }
+            return null;
+        };
+
+        const frontError = validateImage(frontImage, 'Front document');
+        if (frontError) return NextResponse.json({ message: frontError }, { status: 400 });
+
+        if (documentType !== 'PASSPORT') {
+            const backError = validateImage(backImage, 'Back document');
+            if (backError) return NextResponse.json({ message: backError }, { status: 400 });
+        }
+
+        const selfieError = validateImage(selfieImage, 'Selfie');
+        if (selfieError) return NextResponse.json({ message: selfieError }, { status: 400 });
+
+        // 3. Save images to Cloudinary
+        let frontImageUrl, backImageUrl, selfieImageUrl;
+        try {
+            frontImageUrl = await saveImage(frontImage, 'kyc/front');
+            if (backImage && documentType !== 'PASSPORT') {
+                backImageUrl = await saveImage(backImage, 'kyc/back');
+            }
+            selfieImageUrl = await saveImage(selfieImage, 'kyc/selfie');
+        } catch (uploadError: any) {
+            return NextResponse.json({ message: 'Image upload failed. Please try again.' }, { status: 500 });
+        }
+
+        // 4. Create KYC Request
+        await KycRequest.create({
             userId: user.id,
             fullName: dbUser.fullName,
             dob: dbUser.dob,
@@ -57,7 +92,7 @@ export async function POST(req: NextRequest) {
             status: 'PENDING'
         });
 
-        // 4. Update user kycStatus
+        // 5. Update user kycStatus
         await User.findByIdAndUpdate(user.id, { kycStatus: 'PENDING' });
 
         return NextResponse.json({

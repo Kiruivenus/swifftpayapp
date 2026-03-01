@@ -179,25 +179,62 @@ export default function KycPage() {
                             </div>
 
                             {/* Document Display Area */}
-                            <div className="flex-1 p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="flex-1 p-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto">
                                 <div className="space-y-6">
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Document Images</p>
                                         <div className="grid grid-cols-1 gap-4">
-                                            {selectedRequest.documentUrls?.map((url: string, i: number) => (
-                                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="group block">
-                                                    <div className="aspect-[1.6/1] bg-slate-800 rounded-2xl border-2 border-dashed border-slate-700 flex items-center justify-center group-hover:border-indigo-500/50 transition-all overflow-hidden">
-                                                        {url.match(/\.(jpg|jpeg|png|webp|gif)$/) ? (
-                                                            <img src={url} alt="KYC Document" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                                        ) : (
-                                                            <div className="text-center">
-                                                                <FileText size={48} className="text-slate-600 mx-auto mb-2" />
-                                                                <p className="text-xs text-slate-500 font-medium">View Attachment {i + 1}</p>
+                                            {/* Front Image */}
+                                            {selectedRequest.frontImageUrl && (
+                                                <div className="space-y-2">
+                                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Front View</span>
+                                                    <a href={selectedRequest.frontImageUrl} target="_blank" rel="noopener noreferrer" className="group block">
+                                                        <div className="aspect-[1.6/1] bg-slate-800 rounded-2xl border-2 border-slate-700 flex items-center justify-center group-hover:border-indigo-500/50 transition-all overflow-hidden relative">
+                                                            <img
+                                                                src={selectedRequest.frontImageUrl}
+                                                                alt="Front Document"
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                                onError={(e: any) => e.target.src = '/placeholder-error.png'}
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <ExternalLink className="text-white" size={24} />
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                </a>
-                                            ))}
+                                                        </div>
+                                                    </a>
+                                                </div>
+                                            )}
+
+                                            {/* Back Image (Optional) */}
+                                            {selectedRequest.backImageUrl ? (
+                                                <div className="space-y-2">
+                                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Back View</span>
+                                                    <a href={selectedRequest.backImageUrl} target="_blank" rel="noopener noreferrer" className="group block">
+                                                        <div className="aspect-[1.6/1] bg-slate-800 rounded-2xl border-2 border-slate-700 flex items-center justify-center group-hover:border-indigo-500/50 transition-all overflow-hidden relative">
+                                                            <img
+                                                                src={selectedRequest.backImageUrl}
+                                                                alt="Back Document"
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <ExternalLink className="text-white" size={24} />
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                </div>
+                                            ) : selectedRequest.documentType !== 'PASSPORT' && (
+                                                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-center gap-3">
+                                                    <AlertCircle size={16} className="text-amber-500" />
+                                                    <p className="text-[10px] text-amber-400 font-bold uppercase">Back image missing</p>
+                                                </div>
+                                            )}
+
+                                            {/* Warning if front is also missing (shouldn't happen on new submissions) */}
+                                            {!selectedRequest.frontImageUrl && (
+                                                <div className="p-6 bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl text-center">
+                                                    <AlertCircle className="mx-auto text-rose-500/50 mb-2" size={32} />
+                                                    <p className="text-xs text-rose-400 font-bold uppercase tracking-widest">Image upload failed or missing</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -208,7 +245,8 @@ export default function KycPage() {
                                         <MetaField label="Full Name" value={selectedRequest.userId.fullName || 'Not Provided'} match={!!selectedRequest.userId.fullName} />
                                         <MetaField label="Email" value={selectedRequest.userId.email} match={true} />
                                         <MetaField label="Username" value={`@${selectedRequest.userId.username}`} match={true} />
-                                        <MetaField label="Verified By System" value="Passed Initial Checks" match={true} />
+                                        <MetaField label="Nationality" value={selectedRequest.nationality || 'Not Provided'} match={!!selectedRequest.nationality} />
+                                        <MetaField label="ID Number" value={selectedRequest.documentNumber} match={true} />
 
                                         {selectedRequest.rejectionReason && (
                                             <div className="mt-4 p-3 bg-rose-500/5 border border-rose-500/20 rounded-xl flex items-start gap-3">
@@ -220,11 +258,14 @@ export default function KycPage() {
                                         )}
                                     </div>
 
-                                    {selectedRequest.selfieUrl && (
+                                    {selectedRequest.selfieImageUrl && (
                                         <div>
                                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Liveness Selfie</p>
-                                            <a href={selectedRequest.selfieUrl} target="_blank" rel="noopener noreferrer" className="block w-48 h-48 bg-slate-800 rounded-2xl border-2 border-dashed border-slate-700 flex items-center justify-center group hover:border-indigo-500/50 transition-all overflow-hidden">
-                                                <img src={selectedRequest.selfieUrl} alt="Liveness Selfie" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            <a href={selectedRequest.selfieImageUrl} target="_blank" rel="noopener noreferrer" className="block w-48 h-48 bg-slate-800 rounded-2xl border-2 border-dashed border-slate-700 flex items-center justify-center group hover:border-indigo-500/50 transition-all overflow-hidden relative">
+                                                <img src={selectedRequest.selfieImageUrl} alt="Liveness Selfie" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <ExternalLink className="text-white" size={20} />
+                                                </div>
                                             </a>
                                         </div>
                                     )}
