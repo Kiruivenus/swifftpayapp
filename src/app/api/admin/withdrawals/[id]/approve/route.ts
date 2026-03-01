@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
 import User from '@/models/User';
-import Wallet from '@/models/Wallet';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
+import { sendNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -16,39 +16,48 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         await dbConnect();
 
         const tx = await Transaction.findById(id);
-        if (!tx) return NextResponse.json({ message: 'Withdrawal request not found' }, { status: 404 });
-
-        if (tx.type !== 'WITHDRAW' || tx.status !== 'PENDING') {
-            return NextResponse.json({ message: `Invalid transaction status: ${tx.status}` }, { status: 400 });
+        if (!tx) {
+            return NextResponse.json({ message: 'Withdrawal request not found.' }, { status: 404 });
         }
 
-        // 1. Update Transaction
+        if (tx.type !== 'WITHDRAW' || tx.status !== 'PENDING') {
+            return NextResponse.json({
+                message: `This withdrawal cannot be approved. Current status: ${tx.status}`
+            }, { status: 400 });
+        }
+
+        // 1. Find the user and verify they have sufficient balance
+        const user = await User.findById(tx.userId);
+        if (!user) {
+            return NextResponse.json({ message: 'User account not found.' }, { status: 404 });
+        }
+
+        const balanceField = tx.currency === 'KES' ? 'kesBalance' : 'usdtBalance';
+        if (user[balanceField] < tx.amount) {
+            return NextResponse.json({
+                message: `User has insufficient ${tx.currency} balance. Current: ${user[balanceField]}, Required: ${tx.amount}`
+            }, { status: 400 });
+        }
+
+        // 2. Deduct the withdrawal amount from the user's balance
+        user[balanceField] = Math.max(0, user[balanceField] - tx.amount);
+        await user.save();
+
+        // 3. Update Transaction status to SUCCESS
         tx.status = 'SUCCESS';
         tx.processedAt = new Date();
         tx.processedBy = admin.id;
         await tx.save();
 
-        // 2. Update Wallet (Deduct from locked)
-        // Ensure wallet exists
-        let wallet = await Wallet.findOne({ userId: tx.userId });
-        if (!wallet) {
-            // Fallback to User legacy balance if wallet doesn't exist yet
-            const user = await User.findById(tx.userId);
-            if (user) {
-                // If we're using legacy, the amount should remain deducted from kesBalance
-                // No action needed here if it was already deducted on request
-            }
-        } else {
-            if (tx.currency === 'KES') {
-                wallet.lockedKES = Math.max(0, wallet.lockedKES - tx.amount);
-            } else {
-                wallet.lockedUSDT = Math.max(0, wallet.lockedUSDT - tx.amount);
-            }
-            wallet.lastUpdated = new Date();
-            await wallet.save();
-        }
+        // 4. Notify the user
+        await sendNotification(
+            tx.userId,
+            'Withdrawal Approved',
+            `Your withdrawal of ${tx.netAmount || tx.amount} ${tx.currency} has been approved and processed.`,
+            'FINANCE'
+        );
 
-        // Audit log
+        // 5. Audit log
         const ip = req.headers.get('x-forwarded-for') || 'Unknown';
         const ua = req.headers.get('user-agent') || 'Unknown';
 
@@ -61,17 +70,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             targetId: id,
             details: {
                 amount: tx.amount,
+                fee: tx.fee,
+                netAmount: tx.netAmount,
                 currency: tx.currency,
-                userId: tx.userId
+                userId: tx.userId,
+                previousBalance: user[balanceField] + tx.amount,
+                newBalance: user[balanceField]
             },
             ipAddress: ip,
             userAgent: ua,
             severity: 'INFO'
         });
 
-        return NextResponse.json({ success: true, message: 'Withdrawal approved successfully.' });
+        return NextResponse.json({
+            success: true,
+            message: `Withdrawal of ${tx.amount} ${tx.currency} approved. User balance updated.`
+        });
 
     } catch (err: any) {
-        return NextResponse.json({ message: err.message }, { status: 500 });
+        console.error('Approve withdrawal error:', err);
+        return NextResponse.json({ message: 'Something went wrong. Please try again.' }, { status: 500 });
     }
 }

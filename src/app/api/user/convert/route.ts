@@ -65,20 +65,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
 
+        // Calculate pending withdrawals to determine available balance
+        const pendingWithdrawals = await Transaction.aggregate([
+            { $match: { userId: user.id, type: 'WITHDRAW', currency: fromCurrency, status: 'PENDING' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const pendingAmount = pendingWithdrawals.length > 0 ? pendingWithdrawals[0].total : 0;
+
         let fromAmount = amount;
         let toAmount = 0;
 
-        // Check balance based on direction
+        // Check AVAILABLE balance (total balance minus pending withdrawals)
         if (fromCurrency === 'USDT') {
-            if (dbUser.usdtBalance < amount) {
-                return NextResponse.json({ message: 'Insufficient USDT balance' }, { status: 400 });
+            const availableBalance = dbUser.usdtBalance - pendingAmount;
+            if (availableBalance < amount) {
+                return NextResponse.json({
+                    message: `Insufficient available USDT balance. You have ${pendingAmount} USDT pending withdrawal.`
+                }, { status: 400 });
             }
             toAmount = amount * effectiveRate;
             dbUser.usdtBalance -= amount;
             dbUser.kesBalance += toAmount;
         } else {
-            if (dbUser.kesBalance < amount) {
-                return NextResponse.json({ message: 'Insufficient KES balance' }, { status: 400 });
+            const availableBalance = dbUser.kesBalance - pendingAmount;
+            if (availableBalance < amount) {
+                return NextResponse.json({
+                    message: `Insufficient available KES balance. You have ${pendingAmount} KES pending withdrawal.`
+                }, { status: 400 });
             }
             toAmount = amount / effectiveRate;
             dbUser.kesBalance -= amount;
