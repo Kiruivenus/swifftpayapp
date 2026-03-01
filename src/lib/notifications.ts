@@ -40,8 +40,33 @@ export async function sendNotification(
         if (options.push) {
             const tokens = await NotificationToken.find({ userId });
             if (tokens.length > 0) {
-                // Real FCM call would go here
-                console.log(`[PUSH] To User ${userId} (${type}): ${title} - ${message}`);
+                const fcmTokens = tokens.map(t => t.fcmToken);
+                const { fcm } = await import('./firebase-admin');
+
+                try {
+                    const response = await fcm.sendEachForMulticast({
+                        tokens: fcmTokens,
+                        notification: {
+                            title,
+                            body: message,
+                        },
+                        data: {
+                            type,
+                            refId: options.refId || '',
+                            click_action: 'FLUTTER_NOTIFICATION_CLICK', // For common compatibility
+                        },
+                        android: {
+                            priority: 'high',
+                            notification: {
+                                channelId: 'swiftpay_alerts',
+                                icon: 'ic_stat_name' // Should match android drawable if specified
+                            }
+                        }
+                    });
+                    console.log(`[PUSH] Successfully sent ${response.successCount} messages to user ${userId}`);
+                } catch (fcmError) {
+                    console.error('[PUSH] FCM multicast error:', fcmError);
+                }
             }
         }
 

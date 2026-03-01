@@ -118,6 +118,19 @@ export async function POST(req: NextRequest) {
             if (deliveries.length > 0) await BroadcastDelivery.insertMany(deliveries);
             if (userNotifications.length > 0) await UserNotification.insertMany(userNotifications);
 
+            // Trigger actual sending (since we don't have a background worker)
+            const { sendNotification } = await import('@/lib/notifications');
+            for (const recipient of recipients) {
+                if (channels.push) {
+                    // Fire and forget (don't await each to avoid timeout)
+                    sendNotification(recipient._id.toString(), title, message, 'BROADCAST', {
+                        push: true,
+                        inApp: false, // already created above
+                        refId: broadcast._id.toString()
+                    }).catch(e => console.error(`Broadcast failed for ${recipient._id}:`, e));
+                }
+            }
+
             // Update stats for in-app
             if (channels.inApp) {
                 broadcast.stats.sent += targetedCount;
