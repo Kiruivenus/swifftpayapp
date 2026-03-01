@@ -171,7 +171,8 @@ export async function POST(request: NextRequest) {
             token,
             sessionId: session._id,
             role: user.role.toLowerCase(),
-            username: user.username
+            username: user.username,
+            isPinSet: user.isPinSet || false
         });
 
         // Set cookie for web authentication

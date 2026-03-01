@@ -16,6 +16,10 @@ const TrustedDeviceSchema = new Schema({
         type: Date,
         default: Date.now,
     },
+    biometricEnabled: {
+        type: Boolean,
+        default: false,
+    },
     revokedAt: {
         type: Date,
         default: null,

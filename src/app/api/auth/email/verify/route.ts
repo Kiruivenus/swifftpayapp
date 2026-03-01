@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
             message: 'Email verified successfully! Welcome to SwiftPay.',
             token,
             role: user.role,
-            username: user.username
+            username: user.username,
+            isPinSet: user.isPinSet || false
         });
 
     } catch (error: any) {

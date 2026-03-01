@@ -37,6 +37,7 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    pinCreatedAt: Date,
     biometricEnabled: {
         type: Boolean,
         default: false,
