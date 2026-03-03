@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
                     platform: deviceInfo?.platform || 'Android',
                     osVersion: deviceInfo?.osVersion,
                     appVersion: deviceInfo?.appVersion,
-                    ipAddress,
+                    ip: ipAddress,
                     status: 'active',
                     revokedAt: null,
                     lastSeenAt: new Date()
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
                 platform: deviceInfo?.platform || 'Android',
                 osVersion: deviceInfo?.osVersion,
                 appVersion: deviceInfo?.appVersion,
-                ipAddress,
+                ip: ipAddress,
                 status: 'active',
                 lastSeenAt: new Date()
             });
