@@ -14,13 +14,13 @@ const failedAttempts = new Map<string, { count: number, lastAttempt: number }>()
 export async function POST(req: NextRequest) {
     try {
         await dbConnect();
-        const { pin, deviceId } = await req.json();
+        const { pin, deviceId, email } = await req.json();
 
-        if (!pin || !deviceId) {
-            return NextResponse.json({ message: 'PIN and deviceId are required.' }, { status: 400 });
+        if (!pin || !deviceId || !email) {
+            return NextResponse.json({ message: 'PIN, email, and deviceId are required.' }, { status: 400 });
         }
 
-        const trackerKey = `${deviceId}`;
+        const trackerKey = `${deviceId}_${email}`;
         const tracker = failedAttempts.get(trackerKey);
 
         if (tracker && tracker.count >= 5) {
@@ -35,15 +35,18 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Find device and user
-        const trustedDevice = await TrustedDevice.findOne({ deviceId, revokedAt: null });
-        if (!trustedDevice) {
-            return NextResponse.json({ message: 'Device not recognized or access revoked. Please log in with your password.' }, { status: 401 });
-        }
-
-        const user = await User.findById(trustedDevice.userId);
+        const emailNormalized = email.trim().toLowerCase();
+        
+        // Find user first
+        const user = await User.findOne({ emailNormalized });
         if (!user || !user.pinHash) {
             return NextResponse.json({ message: 'User not found or PIN not set.' }, { status: 404 });
+        }
+
+        // Find device for this specific user
+        const trustedDevice = await TrustedDevice.findOne({ userId: user._id, deviceId, revokedAt: null });
+        if (!trustedDevice) {
+            return NextResponse.json({ message: 'Device not recognized or access revoked. Please log in with your password.' }, { status: 401 });
         }
 
         const isMatch = await bcrypt.compare(pin, user.pinHash);
