@@ -138,6 +138,30 @@ export async function POST(request: NextRequest) {
 
     } catch (error: any) {
         console.error('Registration API Error:', error);
+        
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyValue || {})[0];
+            let message = 'An account with this information already exists.';
+            let errorCode = 'DUPLICATE_KEY';
+
+            if (field === 'username' || field === 'usernameNormalized') {
+                message = 'That username is unavailable.';
+                errorCode = 'USERNAME_TAKEN';
+            } else if (field === 'email' || field === 'emailNormalized') {
+                message = 'This email is already registered.';
+                errorCode = 'EMAIL_TAKEN';
+            } else if (field === 'phoneE164' || field === 'phoneNumber') {
+                message = 'This phone number is already in use.';
+                errorCode = 'PHONE_TAKEN';
+            }
+
+            return NextResponse.json({
+                ok: false,
+                message,
+                errorCode
+            }, { status: 400 });
+        }
+
         return NextResponse.json({
             ok: false,
             message: 'An unexpected error occurred during registration.',
