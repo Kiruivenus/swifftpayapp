@@ -64,7 +64,7 @@ export async function POST(req: Request) {
                     TransactionType: 'CustomerBuyGoodsOnline',
                     Amount: amount,
                     PartyA: phoneNumber,
-                    PartyB: 5679822,
+                    PartyB: 8583204,
                     PhoneNumber: phoneNumber,
                     CallBackURL: CALLBACK_URL,
                     AccountReference: 'SwiftPay Deposit',
