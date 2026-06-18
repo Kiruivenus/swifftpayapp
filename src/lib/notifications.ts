@@ -72,6 +72,7 @@ export async function sendNotification(
                         },
                         data: {
                             type,
+                            category: type === 'FINANCE' ? 'transactions' : 'alerts',
                             refId: options.refId || '',
                         },
                         android: {
