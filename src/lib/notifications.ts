@@ -11,9 +11,16 @@ export async function sendNotification(
     title: string,
     message: string,
     type: NotificationType,
-    options: { push?: boolean; inApp?: boolean; email?: boolean; refId?: string } = { push: true, inApp: true, email: true }
+    options: { push?: boolean; inApp?: boolean; email?: boolean; refId?: string } = {}
 ) {
     try {
+        const {
+            push = true,
+            inApp = true,
+            email = true,
+            refId
+        } = options;
+
         // 1. Fetch User and check preferences
         const user = await User.findById(userId);
         if (!user) return;
@@ -46,18 +53,18 @@ export async function sendNotification(
         }
 
         // 3. In-App Notification
-        if (options.inApp) {
+        if (inApp) {
             await UserNotification.create({
                 userId,
                 title,
                 message,
                 type,
-                refId: options.refId
+                refId
             });
         }
 
         // 4. Push Notification
-        if (options.push && prefs.enabled) {
+        if (push && prefs.enabled) {
             const tokens = await NotificationToken.find({ userId });
             if (tokens.length > 0) {
                 const fcmTokens = tokens.map(t => t.fcmToken);
@@ -73,7 +80,7 @@ export async function sendNotification(
                         data: {
                             type,
                             category: type === 'FINANCE' ? 'transactions' : 'alerts',
-                            refId: options.refId || '',
+                            refId: refId || '',
                         },
                         android: {
                             priority: 'high',
@@ -93,7 +100,7 @@ export async function sendNotification(
         }
 
         // 5. Email Notification
-        if (options.email || (type === 'SECURITY' && options.email !== false)) {
+        if (email || (type === 'SECURITY' && email !== false)) {
             try {
                 await sendEmail({
                     to: user.email,
