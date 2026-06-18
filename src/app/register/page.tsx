@@ -185,7 +185,6 @@ export default function RegisterPage() {
                     <div className="pt-6" />
                     <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
                     <p className="text-slate-500 text-sm">Join the next generation of African fintech.</p>
-                </div>
 
                 {/* Progress Bar */}
                 <div className="flex items-center justify-between px-2">

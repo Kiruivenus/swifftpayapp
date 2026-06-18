@@ -98,7 +98,6 @@ export default function LoginPage() {
                     <div className="pt-6" />
                     <h1 className="text-2xl font-bold tracking-tight">Login to SwiftPay</h1>
                     <p className="text-slate-500 text-sm">Welcome back to the future of finance.</p>
-                </div>
 
                 {/* Card Container */}
                 <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">

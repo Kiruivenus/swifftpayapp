@@ -17,6 +17,7 @@ interface UserProfile {
     nationalityName?: string;
     residentialAddress?: string;
     profilePhotoUrl?: string;
+    status?: string;
 }
 
 interface UserBalance {

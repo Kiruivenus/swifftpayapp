@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
             const senderIdStr = sender._id.toString();
             const recipientIdStr = recipientUser._id.toString();
 
-            await Transaction.create([
+            const createdTxs = await Transaction.create([
                 {
                     userId: senderIdStr,
                     senderId: senderIdStr,
@@ -121,6 +121,8 @@ export async function POST(req: NextRequest) {
                 }
             ], { session, ordered: true });
 
+            const senderTx = createdTxs[0];
+
             await session.commitTransaction();
 
             // Trigger Notifications (Async)
@@ -137,7 +139,11 @@ export async function POST(req: NextRequest) {
                 'FINANCE'
             );
 
-            return NextResponse.json({ message: 'Transfer successful' });
+            return NextResponse.json({
+                message: 'Transfer successful',
+                reference: senderTx._id.toString(),
+                createdAt: senderTx.createdAt
+            });
 
         } catch (error: any) {
             if (session.inTransaction()) {

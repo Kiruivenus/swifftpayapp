@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
@@ -21,10 +22,40 @@ export async function GET(req: NextRequest) {
         await dbConnect();
 
         let targetUser;
+        const cleanQuery = query.trim();
+        const lowerQuery = cleanQuery.toLowerCase();
+
         if (type === 'EMAIL') {
-            targetUser = await User.findOne({ emailNormalized: query.trim().toLowerCase() });
+            targetUser = await User.findOne({ emailNormalized: lowerQuery });
+        } else if (type === 'USERNAME') {
+            const cleanUsername = lowerQuery.replace(/^@/, '');
+            targetUser = await User.findOne({ usernameNormalized: cleanUsername });
+        } else if (type === 'USER_ID') {
+            if (mongoose.Types.ObjectId.isValid(cleanQuery)) {
+                targetUser = await User.findById(cleanQuery);
+            }
+            if (!targetUser) {
+                // Fallback: check if username was passed as USER_ID
+                const cleanUsername = lowerQuery.replace(/^@/, '');
+                targetUser = await User.findOne({ usernameNormalized: cleanUsername });
+            }
+            if (!targetUser) {
+                // Fallback: check if email was passed as USER_ID
+                targetUser = await User.findOne({ emailNormalized: lowerQuery });
+            }
         } else {
-            targetUser = await User.findById(query.trim());
+            if (mongoose.Types.ObjectId.isValid(cleanQuery)) {
+                targetUser = await User.findById(cleanQuery);
+            }
+            if (!targetUser) {
+                const cleanUsername = lowerQuery.replace(/^@/, '');
+                targetUser = await User.findOne({
+                    $or: [
+                        { emailNormalized: lowerQuery },
+                        { usernameNormalized: cleanUsername }
+                    ]
+                });
+            }
         }
 
         if (!targetUser) {
