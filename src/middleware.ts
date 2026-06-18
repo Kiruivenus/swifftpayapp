@@ -42,15 +42,24 @@ export async function middleware(request: NextRequest) {
         // 3. RBAC Redirection Logic
 
         // Admin Routes Protection
-        if (pathname.startsWith('/admin') || pathname.startsWith('/dashboard')) {
+        if (pathname.startsWith('/admin')) {
             if (role === 'user') {
-                return NextResponse.redirect(new URL('/mobile-only', request.url));
+                return NextResponse.redirect(new URL('/dashboard', request.url));
             }
             // Authorized admin roles
             return NextResponse.next();
         }
 
+        // Dashboard Protection
+        if (pathname.startsWith('/dashboard')) {
+            // Authorized users can access the dashboard
+            return NextResponse.next();
+        }
+
         // User Mobile Redirect Gating
+        if (pathname === '/mobile-only' && role === 'user') {
+            return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
         if (pathname === '/mobile-only' && role !== 'user') {
             return NextResponse.redirect(new URL('/admin/dashboard', request.url));
         }

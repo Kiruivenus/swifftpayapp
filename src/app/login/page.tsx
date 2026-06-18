@@ -45,7 +45,7 @@ export default function LoginPage() {
             if (data.token) {
                 // In a production app, the token is usually in a cookie set by the server
                 // but if we handle it client-side:
-                window.location.href = '/mobile-only';
+                window.location.href = '/dashboard';
             } else {
                 setError(data.message || 'Invalid credentials');
                 setLoading(false);
@@ -78,7 +78,7 @@ export default function LoginPage() {
             const data = await res.json();
             if (data.ok) {
                 // Token & cookie are set by the server — just redirect
-                window.location.href = '/mobile-only';
+                window.location.href = '/dashboard';
             } else {
                 setError(data.message || 'Invalid 2FA code');
                 setLoading(false);
@@ -95,13 +95,7 @@ export default function LoginPage() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-rose-600/10 blur-[100px] rounded-full -z-10" />
 
             <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {/* Logo */}
-                <div className="text-center space-y-4">
-                    <Link href="/" className="inline-flex items-center gap-3 group">
-                        <div className="w-12 h-12 bg-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-600/20 group-hover:scale-110 transition-transform">
-                            <span className="font-bold text-2xl text-white">S</span>
-                        </div>
-                    </Link>
+                    <div className="pt-6" />
                     <h1 className="text-2xl font-bold tracking-tight">Login to SwiftPay</h1>
                     <p className="text-slate-500 text-sm">Welcome back to the future of finance.</p>
                 </div>

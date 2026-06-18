@@ -64,9 +64,7 @@ function NewPasswordContent() {
 
             <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="text-center space-y-4">
-                    <div className="w-16 h-16 bg-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-600/20 mx-auto group-hover:scale-110 transition-transform">
-                        <Lock className="text-white" size={32} />
-                    </div>
+                    <div className="pt-6" />
                     <h1 className="text-2xl font-bold tracking-tight">Set New Password</h1>
                     <p className="text-slate-500 text-sm italic">Create a strong, secure password for your account.</p>
                 </div>
