@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
                     lastUsedAt: new Date(),
                     revokedAt: null
                 },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
         }
 
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
                     revokedAt: null,
                     lastSeenAt: new Date()
                 },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
         } else {
             session = await Session.create({

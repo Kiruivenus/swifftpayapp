@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
             session = await Session.findOneAndUpdate(
                 { userId: user._id, deviceId },
                 { ...sessionData, status: 'active' },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
         } else {
             session = await Session.create({

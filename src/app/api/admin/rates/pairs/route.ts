@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
                     isActive: true
                 }
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         // Write History

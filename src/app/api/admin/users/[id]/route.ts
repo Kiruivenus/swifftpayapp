@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const updatedUser = await User.findByIdAndUpdate(
             id,
             { $set: body },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         // Audit log

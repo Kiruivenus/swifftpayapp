@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
                 platform: platform || 'android',
                 lastUpdated: new Date()
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         return NextResponse.json({ message: 'Token registered successfully' });
