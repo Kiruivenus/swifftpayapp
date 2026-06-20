@@ -42,9 +42,10 @@ export async function POST(req: Request) {
                     const { sendNotification } = await import('@/lib/notifications');
                     await sendNotification(
                         transaction.userId,
-                        "Deposit Successful",
-                        `Your deposit of ${amount} KES via M-Pesa was successful. Receipt: ${mpesaReceiptNumber}`,
-                        'FINANCE'
+                        "Transaction Alert",
+                        `Your deposit of ${amount} KES via M-Pesa was successful. M-Pesa Receipt: ${mpesaReceiptNumber}. Ref Id: ${transaction._id.toString()}`,
+                        'FINANCE',
+                        { refId: transaction._id.toString() }
                     );
                 } catch (notifyErr) {
                     console.error('Deposit Success Notification Error:', notifyErr);
@@ -66,9 +67,10 @@ export async function POST(req: Request) {
                     const { sendNotification } = await import('@/lib/notifications');
                     await sendNotification(
                         failedTx.userId,
-                        "Deposit Failed",
-                        `Your deposit of ${failedTx.amount} KES was unsuccessful. Reason: ${result.ResultDesc}`,
-                        'FINANCE'
+                        "Transaction Alert",
+                        `Your deposit of ${failedTx.amount} KES was unsuccessful. Ref Id: ${failedTx._id.toString()}. Reason: ${result.ResultDesc}`,
+                        'FINANCE',
+                        { refId: failedTx._id.toString() }
                     );
                 } catch (notifyErr) {
                     console.error('Deposit Failure Notification Error:', notifyErr);

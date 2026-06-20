@@ -129,14 +129,16 @@ export async function POST(req: NextRequest) {
             await sendNotification(
                 senderIdStr,
                 "Transaction Alert",
-                `Sent ${amount} ${currency} to ${recipientUser.username || recipient}`,
-                'FINANCE'
+                `Transfer of ${amount} ${currency} to ${recipientUser.fullName || recipientUser.username || recipientUser.email} was successful. Ref Id: ${senderTx._id.toString()}`,
+                'FINANCE',
+                { refId: senderTx._id.toString() }
             );
             await sendNotification(
                 recipientIdStr,
                 "Transaction Alert",
-                `Received ${amount} ${currency} from ${sender.username || sender.email}`,
-                'FINANCE'
+                `You have received ${amount} ${currency} from ${sender.fullName || sender.username || sender.email}. Ref Id: ${senderTx._id.toString()}`,
+                'FINANCE',
+                { refId: senderTx._id.toString() }
             );
 
             return NextResponse.json({

@@ -91,10 +91,6 @@ export async function sendNotification(
                 try {
                     await fcm.sendEachForMulticast({
                         tokens: fcmTokens,
-                        notification: {
-                            title,
-                            body: message,
-                        },
                         data: {
                             title,
                             body: message,
@@ -104,11 +100,7 @@ export async function sendNotification(
                             refId: refId || '',
                         },
                         android: {
-                            priority: 'high',
-                            notification: {
-                                channelId: 'swiftpay_alerts',
-                                color: '#e11d48'
-                            }
+                            priority: 'high'
                         }
                     });
                     console.log(`[PUSH] Sent to user ${userId} (${fcmTokens.length} devices)`);

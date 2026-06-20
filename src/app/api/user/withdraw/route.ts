@@ -123,9 +123,10 @@ export async function POST(req: NextRequest) {
             const { sendNotification } = await import('@/lib/notifications');
             await sendNotification(
                 user.id,
-                "Withdrawal Requested",
-                `Your withdrawal of ${amount} ${currency} has been submitted. Status: PENDING`,
-                'FINANCE'
+                "Transaction Alert",
+                `Your withdrawal request of ${amount} ${currency} has been submitted. Ref Id: ${transaction._id.toString()}. Status: PENDING`,
+                'FINANCE',
+                { refId: transaction._id.toString() }
             );
         } catch (notifyErr) {
             console.error('Withdraw Notification Error:', notifyErr);
