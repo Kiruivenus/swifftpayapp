@@ -107,8 +107,6 @@ export async function sendNotification(
                             priority: 'high',
                             notification: {
                                 channelId: 'swiftpay_alerts',
-                                // Using standard system icon as ic_stat_name is missing
-                                icon: 'stock_incoming_call',
                                 color: '#e11d48'
                             }
                         }
