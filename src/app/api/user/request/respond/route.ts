@@ -146,6 +146,14 @@ export async function POST(req: NextRequest) {
 
                 await session.commitTransaction();
 
+                // Check and process referral requirements
+                try {
+                    const { checkAndProcessReferral } = await import('@/lib/referralEngine');
+                    await checkAndProcessReferral(payerIdStr);
+                } catch (refErr) {
+                    console.error('Referral processing error during respond request:', refErr);
+                }
+
                 // Trigger alerts (Async)
                 await sendNotification(
                     requesterIdStr,

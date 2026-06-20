@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 interface EmailOptions {
     to: string;
@@ -33,10 +35,8 @@ export function renderEmail({ title, body, code, actionText, actionUrl }: Partia
                         <!-- Header with Brand Logo -->
                         <tr>
                             <td align="center" style="padding: 30px; border-bottom: 1px solid ${borderCol}; background: rgba(255, 122, 0, 0.02);">
-                                <div style="display: inline-flex; align-items: center; gap: 8px;">
-                                    <div style="width: 36px; height: 36px; background: rgba(255, 122, 0, 0.1); border: 1px solid rgba(255, 122, 0, 0.2); border-radius: 10px; display: inline-block; vertical-align: middle; text-align: center; line-height: 36px;">
-                                        <span style="color: ${primaryColor}; font-size: 20px; font-weight: bold;">⚡</span>
-                                    </div>
+                                <div style="display: inline-flex; align-items: center; gap: 10px; vertical-align: middle;">
+                                    <img src="cid:logo" alt="SwiftPay Logo" style="width: 36px; height: 36px; border-radius: 10px; display: inline-block; vertical-align: middle; object-fit: contain;" />
                                     <span style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; vertical-align: middle; margin-left: 6px;">SwiftPay</span>
                                 </div>
                             </td>
@@ -46,7 +46,7 @@ export function renderEmail({ title, body, code, actionText, actionUrl }: Partia
                         <tr>
                             <td style="padding: 40px;">
                                 <h2 style="color: #ffffff; margin-top: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">${title || 'Notification'}</h2>
-                                <div style="white-space: pre-line; margin-bottom: 24px; font-size: 15px; color: #94A3B8; leading-height: 1.7;">${body || 'Hello, you have a new notification from SwiftPay.'}</div>
+                                <div style="white-space: pre-line; margin-bottom: 24px; font-size: 15px; color: #94A3B8; line-height: 1.7;">${body || 'Hello, you have a new notification from SwiftPay.'}</div>
                                 
                                 ${code ? `
                                 <div style="background: rgba(255, 122, 0, 0.05); border: 1px dashed rgba(255, 122, 0, 0.3); border-radius: 12px; padding: 24px; text-align: center; margin: 30px 0;">
@@ -103,6 +103,17 @@ export async function sendEmail({ to, subject, body, code, title, actionText, ac
     let attempts = 0;
     let lastError = null;
 
+    // Load logo image buffer for attachments
+    let logoBase64 = '';
+    try {
+        const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+        if (fs.existsSync(logoPath)) {
+            logoBase64 = fs.readFileSync(logoPath).toString('base64');
+        }
+    } catch (err) {
+        console.error('Failed to read logo.png for email attachments:', err);
+    }
+
     while (attempts < maxRetries) {
         attempts++;
         try {
@@ -110,6 +121,15 @@ export async function sendEmail({ to, subject, body, code, title, actionText, ac
 
             // Method A: Check for Resend API Key and use it
             if (RESEND_API_KEY && RESEND_API_KEY !== 'placeholder_key') {
+                const resendAttachments = [];
+                if (logoBase64) {
+                    resendAttachments.push({
+                        filename: 'logo.png',
+                        content: logoBase64,
+                        id: 'logo'
+                    });
+                }
+
                 const res = await fetch('https://api.resend.com/emails', {
                     method: 'POST',
                     headers: {
@@ -121,7 +141,8 @@ export async function sendEmail({ to, subject, body, code, title, actionText, ac
                         to: [to],
                         subject,
                         html: htmlContent,
-                        text: body + (code ? ` Code: ${code}` : '')
+                        text: body + (code ? ` Code: ${code}` : ''),
+                        attachments: resendAttachments
                     })
                 });
 
@@ -154,12 +175,22 @@ export async function sendEmail({ to, subject, body, code, title, actionText, ac
                     },
                 });
 
+                const smtpAttachments = [];
+                if (logoBase64) {
+                    smtpAttachments.push({
+                        filename: 'logo.png',
+                        path: path.join(process.cwd(), 'public', 'logo.png'),
+                        cid: 'logo'
+                    });
+                }
+
                 const info = await transporter.sendMail({
                     from: EMAIL_FROM,
                     to,
                     subject,
                     html: htmlContent,
                     text: body + (code ? ` Code: ${code}` : ''),
+                    attachments: smtpAttachments,
                 });
 
                 // Log Success to DB

@@ -77,6 +77,15 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Check inviteCode / referrer
+        let referredByUserId = null;
+        if (inviteCode) {
+            const referrer = await User.findOne({ referralCode: inviteCode.trim().toUpperCase() });
+            if (referrer) {
+                referredByUserId = referrer._id;
+            }
+        }
+
         // Create new user
         const newUser = await User.create({
             username,
@@ -88,7 +97,7 @@ export async function POST(request: NextRequest) {
             password: hashedPassword,
             countryCode,
             currency,
-            inviteCode,
+            referredBy: referredByUserId,
             role: 'user', // Default role is 'user' (lowercase as per schema)
             kesBalance: 0,
             usdtBalance: 0,
@@ -103,6 +112,18 @@ export async function POST(request: NextRequest) {
                 promotions: false
             }
         });
+
+        // Create pending referral record if referred
+        if (referredByUserId) {
+            const Referral = (await import('@/models/Referral')).default;
+            await Referral.create({
+                referrerId: referredByUserId,
+                referredUserId: newUser._id,
+                status: 'PENDING',
+                cardSpent: false,
+                deposited: false
+            });
+        }
 
         // Generate Verification OTP
         const code = Math.floor(100000 + Math.random() * 900000).toString();

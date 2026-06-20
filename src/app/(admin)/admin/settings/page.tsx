@@ -17,7 +17,8 @@ import {
     Loader2,
     RefreshCw,
     X,
-    CheckCircle2
+    CheckCircle2,
+    Gift
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 
@@ -32,6 +33,13 @@ export default function SettingsPage() {
     const [supportEmail, setSupportEmail] = useState('');
     const [maintenanceMode, setMaintenanceMode] = useState(false);
     const [maintenanceMessage, setMaintenanceMessage] = useState('');
+
+    const [referralEnabled, setReferralEnabled] = useState(true);
+    const [referralMinRewardUsd, setReferralMinRewardUsd] = useState(2);
+    const [referralMaxRewardUsd, setReferralMaxRewardUsd] = useState(10);
+    const [referralCardSpendRequirementUsd, setReferralCardSpendRequirementUsd] = useState(5);
+    const [referralCardSpendDaysLimit, setReferralCardSpendDaysLimit] = useState(14);
+    const [referralDepositRequirementUsd, setReferralDepositRequirementUsd] = useState(100);
 
     const fetchData = useCallback(async () => {
         try {
@@ -48,6 +56,13 @@ export default function SettingsPage() {
             setSupportEmail(settingsRes.supportEmail);
             setMaintenanceMode(settingsRes.maintenanceMode);
             setMaintenanceMessage(settingsRes.maintenanceMessage || '');
+
+            setReferralEnabled(settingsRes.referralEnabled ?? true);
+            setReferralMinRewardUsd(settingsRes.referralMinRewardUsd ?? 2);
+            setReferralMaxRewardUsd(settingsRes.referralMaxRewardUsd ?? 10);
+            setReferralCardSpendRequirementUsd(settingsRes.referralCardSpendRequirementUsd ?? 5);
+            setReferralCardSpendDaysLimit(settingsRes.referralCardSpendDaysLimit ?? 14);
+            setReferralDepositRequirementUsd(settingsRes.referralDepositRequirementUsd ?? 100);
         } catch (err: any) {
             console.error('Failed to fetch settings:', err);
         } finally {
@@ -66,7 +81,13 @@ export default function SettingsPage() {
                 platformName,
                 supportEmail,
                 maintenanceMode,
-                maintenanceMessage
+                maintenanceMessage,
+                referralEnabled,
+                referralMinRewardUsd,
+                referralMaxRewardUsd,
+                referralCardSpendRequirementUsd,
+                referralCardSpendDaysLimit,
+                referralDepositRequirementUsd
             });
             alert("General settings updated successfully.");
             await fetchData();
@@ -203,6 +224,93 @@ export default function SettingsPage() {
                                     />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Referral Program Settings */}
+                    <div className="bg-[#0D1017]/80 border border-[#1E2533] rounded-3xl p-8 backdrop-blur-md shadow-2xl">
+                        <h3 className="text-base font-bold text-white flex items-center gap-3 mb-8 uppercase tracking-wider">
+                            <Gift className="text-primary-orange" size={22} />
+                            Referral Program Configuration
+                        </h3>
+
+                        <div className="space-y-6">
+                            <div className={`flex items-center justify-between p-5 border rounded-2xl transition-all duration-500 ${referralEnabled ? 'bg-primary-orange/10 border-primary-orange/30 ring-1 ring-primary-orange/20 shadow-[0_0_12px_rgba(255,90,0,0.05)]' : 'bg-[#07090E]/40 border-[#1E2533] shadow-inner'}`}>
+                                <div className="flex items-start gap-4">
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${referralEnabled ? 'bg-primary-orange/20 text-primary-orange rotate-12 scale-105 border border-primary-orange/35' : 'bg-[#07090E] border border-[#1E2533] text-slate-500'}`}>
+                                        <Gift size={22} />
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-sm font-black uppercase tracking-wider ${referralEnabled ? 'text-primary-orange' : 'text-white'}`}>Referral Program Status</h4>
+                                        <p className="text-xs text-slate-500 mt-1 max-w-sm font-medium">Toggle user invitations and referral reward tracking globally.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setReferralEnabled(!referralEnabled)}
+                                    className={`w-12 h-6 rounded-full relative transition-all duration-300 shadow-inner cursor-pointer outline-none ${referralEnabled ? 'bg-primary-orange' : 'bg-slate-800'}`}
+                                >
+                                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-300 shadow-lg ${referralEnabled ? 'left-6.5' : 'left-0.5'}`} />
+                                </button>
+                            </div>
+
+                            {referralEnabled && (
+                                <div className="space-y-6 animate-in slide-in-from-top-4 duration-300">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1 font-mono">Min Reward Amount (USD)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={referralMinRewardUsd}
+                                                onChange={(e) => setReferralMinRewardUsd(Number(e.target.value))}
+                                                className="w-full px-4 py-3 bg-[#07090E] border border-[#1E2533] rounded-xl text-xs text-slate-200 focus:outline-none focus:border-primary-orange font-bold font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1 font-mono">Max Reward Amount (USD)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={referralMaxRewardUsd}
+                                                onChange={(e) => setReferralMaxRewardUsd(Number(e.target.value))}
+                                                className="w-full px-4 py-3 bg-[#07090E] border border-[#1E2533] rounded-xl text-xs text-slate-200 focus:outline-none focus:border-primary-orange font-bold font-mono"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1 font-mono">Card Spend Required (USD)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={referralCardSpendRequirementUsd}
+                                                onChange={(e) => setReferralCardSpendRequirementUsd(Number(e.target.value))}
+                                                className="w-full px-4 py-3 bg-[#07090E] border border-[#1E2533] rounded-xl text-xs text-slate-200 focus:outline-none focus:border-primary-orange font-bold font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1 font-mono">Card Spend Limit (Days)</label>
+                                            <input
+                                                type="number"
+                                                value={referralCardSpendDaysLimit}
+                                                onChange={(e) => setReferralCardSpendDaysLimit(Number(e.target.value))}
+                                                className="w-full px-4 py-3 bg-[#07090E] border border-[#1E2533] rounded-xl text-xs text-slate-200 focus:outline-none focus:border-primary-orange font-bold font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1 font-mono">Deposit Required (USD)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={referralDepositRequirementUsd}
+                                                onChange={(e) => setReferralDepositRequirementUsd(Number(e.target.value))}
+                                                className="w-full px-4 py-3 bg-[#07090E] border border-[#1E2533] rounded-xl text-xs text-slate-200 focus:outline-none focus:border-primary-orange font-bold font-mono"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

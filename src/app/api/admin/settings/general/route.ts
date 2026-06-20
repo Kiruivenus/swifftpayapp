@@ -11,7 +11,18 @@ export async function PUT(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { platformName, supportEmail, maintenanceMode, maintenanceMessage } = body;
+        const { 
+            platformName, 
+            supportEmail, 
+            maintenanceMode, 
+            maintenanceMessage,
+            referralEnabled,
+            referralMinRewardUsd,
+            referralMaxRewardUsd,
+            referralCardSpendRequirementUsd,
+            referralCardSpendDaysLimit,
+            referralDepositRequirementUsd
+        } = body;
 
         await dbConnect();
         const settings = await (PlatformSettings as any).getSettings();
@@ -20,7 +31,13 @@ export async function PUT(req: NextRequest) {
             platformName: settings.platformName,
             supportEmail: settings.supportEmail,
             maintenanceMode: settings.maintenanceMode,
-            maintenanceMessage: settings.maintenanceMessage
+            maintenanceMessage: settings.maintenanceMessage,
+            referralEnabled: settings.referralEnabled,
+            referralMinRewardUsd: settings.referralMinRewardUsd,
+            referralMaxRewardUsd: settings.referralMaxRewardUsd,
+            referralCardSpendRequirementUsd: settings.referralCardSpendRequirementUsd,
+            referralCardSpendDaysLimit: settings.referralCardSpendDaysLimit,
+            referralDepositRequirementUsd: settings.referralDepositRequirementUsd
         };
 
         // Update fields
@@ -28,6 +45,12 @@ export async function PUT(req: NextRequest) {
         if (supportEmail !== undefined) settings.supportEmail = supportEmail;
         if (maintenanceMode !== undefined) settings.maintenanceMode = maintenanceMode;
         if (maintenanceMessage !== undefined) settings.maintenanceMessage = maintenanceMessage;
+        if (referralEnabled !== undefined) settings.referralEnabled = referralEnabled;
+        if (referralMinRewardUsd !== undefined) settings.referralMinRewardUsd = Number(referralMinRewardUsd);
+        if (referralMaxRewardUsd !== undefined) settings.referralMaxRewardUsd = Number(referralMaxRewardUsd);
+        if (referralCardSpendRequirementUsd !== undefined) settings.referralCardSpendRequirementUsd = Number(referralCardSpendRequirementUsd);
+        if (referralCardSpendDaysLimit !== undefined) settings.referralCardSpendDaysLimit = Number(referralCardSpendDaysLimit);
+        if (referralDepositRequirementUsd !== undefined) settings.referralDepositRequirementUsd = Number(referralDepositRequirementUsd);
 
         settings.updatedBy = admin.id;
         settings.updatedAt = new Date();
@@ -37,7 +60,13 @@ export async function PUT(req: NextRequest) {
             platformName: settings.platformName,
             supportEmail: settings.supportEmail,
             maintenanceMode: settings.maintenanceMode,
-            maintenanceMessage: settings.maintenanceMessage
+            maintenanceMessage: settings.maintenanceMessage,
+            referralEnabled: settings.referralEnabled,
+            referralMinRewardUsd: settings.referralMinRewardUsd,
+            referralMaxRewardUsd: settings.referralMaxRewardUsd,
+            referralCardSpendRequirementUsd: settings.referralCardSpendRequirementUsd,
+            referralCardSpendDaysLimit: settings.referralCardSpendDaysLimit,
+            referralDepositRequirementUsd: settings.referralDepositRequirementUsd
         };
 
         // Audit log

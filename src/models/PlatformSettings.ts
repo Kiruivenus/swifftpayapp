@@ -34,6 +34,14 @@ const PlatformSettingsSchema = new Schema({
     kycRequired: { type: Boolean, default: true },
     withdrawalRequiresKyc: { type: Boolean, default: true },
 
+    // Referral Program Settings
+    referralEnabled: { type: Boolean, default: true },
+    referralMinRewardUsd: { type: Number, default: 2.00 },
+    referralMaxRewardUsd: { type: Number, default: 10.00 },
+    referralCardSpendRequirementUsd: { type: Number, default: 5.00 },
+    referralCardSpendDaysLimit: { type: Number, default: 14 },
+    referralDepositRequirementUsd: { type: Number, default: 100.00 },
+
     updatedAt: { type: Date, default: Date.now },
     updatedBy: { type: String } // Admin User ID
 }, {

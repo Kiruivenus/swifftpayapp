@@ -57,10 +57,8 @@ export default function AdminLayout({
                 {/* Brand / Logo Area */}
                 <div className="p-5 border-b border-[#1E2533] flex items-center justify-between h-16">
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-9 h-9 bg-primary-orange-light border border-primary-orange-border rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-primary-orange/5 transition-all hover:scale-105 duration-300">
-                            <svg className="w-5 h-5 text-primary-orange filter drop-shadow-[0_0_4px_rgba(255,122,0,0.5)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" />
-                            </svg>
+                        <div className="w-9 h-9 bg-transparent rounded-xl flex items-center justify-center shrink-0 transition-all hover:scale-105 duration-300">
+                            <img src="/logo.png" alt="SwiftPay Logo" className="w-9 h-9 object-contain rounded-xl" />
                         </div>
                         {!collapsed && (
                             <div className="animate-in fade-in duration-300">

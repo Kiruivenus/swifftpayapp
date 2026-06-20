@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import PlatformSettings from '@/models/PlatformSettings';
 
 export async function GET(req: NextRequest) {
-    // For now, returning hardcoded settings. 
-    // In a full implementation, these would come from a Settings model in MongoDB.
-    return NextResponse.json({
-        usdtToKesRate: 128.5, // Current market-like rate
-        minDeposit: 50,
-        transactionFeePercent: 1
-    });
+    try {
+        await dbConnect();
+        const settings = await (PlatformSettings as any).getSettings();
+        return NextResponse.json({
+            usdtToKesRate: 128.5, 
+            minDeposit: 50,
+            transactionFeePercent: 1,
+            referralEnabled: settings.referralEnabled ?? true,
+            referralMinRewardUsd: settings.referralMinRewardUsd ?? 2.00,
+            referralMaxRewardUsd: settings.referralMaxRewardUsd ?? 10.00
+        });
+    } catch (err: any) {
+        return NextResponse.json({
+            usdtToKesRate: 128.5,
+            minDeposit: 50,
+            transactionFeePercent: 1,
+            referralEnabled: true,
+            referralMinRewardUsd: 2.00,
+            referralMaxRewardUsd: 10.00
+        });
+    }
 }

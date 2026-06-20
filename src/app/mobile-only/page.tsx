@@ -48,10 +48,8 @@ export default function MobileOnlyPage() {
                 {/* Logo & Header */}
                 <div className="space-y-4">
                     <div className="inline-flex items-center gap-3">
-                        <div className="w-12 h-12 bg-primary-orange/10 border border-primary-orange/20 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-orange/5">
-                            <svg className="w-6 h-6 text-primary-orange filter drop-shadow-[0_0_4px_rgba(255,122,0,0.5)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" />
-                            </svg>
+                        <div className="w-12 h-12 bg-transparent rounded-2xl flex items-center justify-center shrink-0">
+                            <img src="/logo.png" alt="SwiftPay Logo" className="w-12 h-12 object-contain rounded-2xl" />
                         </div>
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mt-2">SwiftPay is Mobile-First</h1>

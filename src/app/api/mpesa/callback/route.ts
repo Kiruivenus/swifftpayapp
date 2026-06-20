@@ -37,6 +37,14 @@ export async function POST(req: Request) {
                     $inc: { kesBalance: amount }
                 });
 
+                // Check and process referral requirements
+                try {
+                    const { checkAndProcessReferral } = await import('@/lib/referralEngine');
+                    await checkAndProcessReferral(transaction.userId);
+                } catch (refErr) {
+                    console.error('Referral processing error during deposit callback:', refErr);
+                }
+
                 // Trigger Success Notification
                 try {
                     const { sendNotification } = await import('@/lib/notifications');

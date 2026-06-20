@@ -113,6 +113,15 @@ const UserSchema = new Schema({
     userSettings: {
         hideBalances: { type: Boolean, default: false },
     },
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true,
+    },
+    referredBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+    },
 });
 
 // Pre-validation hook to ensure normalized fields are populated
@@ -122,6 +131,14 @@ UserSchema.pre('validate', async function () {
     }
     if (this.username) {
         this.usernameNormalized = this.username.trim().toLowerCase();
+    }
+    if (!this.referralCode) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        this.referralCode = code;
     }
 });
 
