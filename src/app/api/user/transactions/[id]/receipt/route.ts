@@ -205,7 +205,7 @@ export async function GET(
         headers.set('Content-Disposition', `attachment; filename=SwiftPay_Receipt_${tx._id.toString().substring(0,8)}.pdf`);
         headers.set('Content-Length', pdfBuffer.length.toString());
 
-        return new NextResponse(pdfBuffer, { status: 200, headers });
+        return new NextResponse(new Uint8Array(pdfBuffer), { status: 200, headers });
 
     } catch (error: any) {
         console.error('Receipt Generation Error:', error);
