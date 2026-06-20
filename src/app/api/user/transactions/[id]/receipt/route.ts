@@ -36,8 +36,8 @@ export async function GET(
         }
 
         // Fetch user profiles to get full names and emails
-        const senderProfile = tx.senderId ? await User.findById(tx.senderId).select('fullName username email') : null;
-        const recipientProfile = tx.recipientId ? await User.findById(tx.recipientId).select('fullName username email') : null;
+        const senderProfile = (tx.senderId && /^[0-9a-fA-F]{24}$/.test(tx.senderId)) ? await User.findById(tx.senderId).select('fullName username email') : null;
+        const recipientProfile = (tx.recipientId && /^[0-9a-fA-F]{24}$/.test(tx.recipientId)) ? await User.findById(tx.recipientId).select('fullName username email') : null;
 
         const senderName = senderProfile ? (senderProfile.fullName || senderProfile.username || senderProfile.email) : (tx.senderId || 'SwiftPay User');
         const recipientName = recipientProfile ? (recipientProfile.fullName || recipientProfile.username || recipientProfile.email) : (tx.recipientId || 'SwiftPay User');

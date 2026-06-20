@@ -19,8 +19,12 @@ export async function GET(req: NextRequest) {
         // Fetch related user details to display full names and profile photos
         const userIds = new Set<string>();
         transactions.forEach(tx => {
-            if (tx.senderId) userIds.add(tx.senderId);
-            if (tx.recipientId) userIds.add(tx.recipientId);
+            if (tx.senderId && /^[0-9a-fA-F]{24}$/.test(tx.senderId)) {
+                userIds.add(tx.senderId);
+            }
+            if (tx.recipientId && /^[0-9a-fA-F]{24}$/.test(tx.recipientId)) {
+                userIds.add(tx.recipientId);
+            }
         });
 
         const User = (await import('@/models/User')).default;
