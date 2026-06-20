@@ -4,7 +4,7 @@ import React from 'react';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function LogoutButton() {
+export default function LogoutButton({ collapsed = false }: { collapsed?: boolean }) {
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -20,10 +20,11 @@ export default function LogoutButton() {
     return (
         <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full p-3 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all font-medium text-sm"
+            className={`flex items-center gap-3 w-full p-3 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all font-medium text-sm ${collapsed ? 'justify-center' : ''}`}
+            title={collapsed ? "Logout" : undefined}
         >
-            <LogOut size={20} />
-            Logout
+            <LogOut size={20} className="shrink-0" />
+            {!collapsed && <span className="truncate animate-in fade-in duration-300">Logout</span>}
         </button>
     );
 }
