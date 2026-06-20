@@ -85,49 +85,55 @@ export async function sendNotification(
         if (push && prefs.enabled) {
             const tokens = await NotificationToken.find({ userId });
             if (tokens.length > 0) {
-                const fcmTokens = tokens.map(t => t.fcmToken);
-                const { fcm } = await import('./firebase-admin');
+                // Deduplicate tokens to prevent sending duplicate notifications to the same device
+                const fcmTokens = Array.from(new Set(tokens.map(t => t.fcmToken).filter(Boolean)));
+                
+                if (fcmTokens.length > 0) {
+                    const { fcm } = await import('./firebase-admin');
 
-                try {
-                    await fcm.sendEachForMulticast({
-                        tokens: fcmTokens,
-                        data: {
-                            title,
-                            body: message,
-                            message,
-                            type,
-                            category: type === 'FINANCE' ? 'transactions' : 'alerts',
-                            refId: refId || '',
-                        },
-                        android: {
-                            priority: 'high'
+                    try {
+                        await fcm.sendEachForMulticast({
+                            tokens: fcmTokens,
+                            data: {
+                                title,
+                                body: message,
+                                message,
+                                type,
+                                category: type === 'FINANCE' ? 'transactions' : 'alerts',
+                                refId: refId || '',
+                            },
+                            android: {
+                                priority: 'high'
+                            }
+                        });
+                        console.log(`[PUSH] Sent to user ${userId} (${fcmTokens.length} unique devices)`);
+
+                        // Update delivery status if it's a broadcast
+                        if (type === 'BROADCAST' && refId) {
+                            try {
+                                const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                                await BroadcastDelivery.updateOne(
+                                    { broadcastId: refId, userId, channel: 'push' },
+                                    { status: 'SENT', sentAt: new Date() }
+                                );
+                            } catch (dbErr) {
+                                console.error('[PUSH] Failed to update BroadcastDelivery status:', dbErr);
+                            }
                         }
-                    });
-                    console.log(`[PUSH] Sent to user ${userId} (${fcmTokens.length} devices)`);
-
-                    // Update delivery status if it's a broadcast
-                    if (type === 'BROADCAST' && refId) {
-                        try {
-                            const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
-                            await BroadcastDelivery.updateOne(
-                                { broadcastId: refId, userId, channel: 'push' },
-                                { status: 'SENT', sentAt: new Date() }
-                            );
-                        } catch (dbErr) {
-                            console.error('[PUSH] Failed to update BroadcastDelivery status:', dbErr);
+                    } catch (fcmError: any) {
+                        console.error('[PUSH] FCM error:', fcmError);
+                        if (type === 'BROADCAST' && refId) {
+                            try {
+                                const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                                await BroadcastDelivery.updateOne(
+                                    { broadcastId: refId, userId, channel: 'push' },
+                                    { status: 'FAILED', errorMessage: fcmError.message || String(fcmError) }
+                                );
+                            } catch (dbErr) {}
                         }
                     }
-                } catch (fcmError: any) {
-                    console.error('[PUSH] FCM error:', fcmError);
-                    if (type === 'BROADCAST' && refId) {
-                        try {
-                            const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
-                            await BroadcastDelivery.updateOne(
-                                { broadcastId: refId, userId, channel: 'push' },
-                                { status: 'FAILED', errorMessage: fcmError.message || String(fcmError) }
-                            );
-                        } catch (dbErr) {}
-                    }
+                } else {
+                    console.log(`[PUSH] Skipped for user ${userId} - No valid FCM tokens after filtering`);
                 }
             } else {
                 // No tokens registered
