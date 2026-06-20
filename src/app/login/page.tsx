@@ -43,9 +43,12 @@ export default function LoginPage() {
             }
 
             if (data.token) {
-                // In a production app, the token is usually in a cookie set by the server
-                // but if we handle it client-side:
-                window.location.href = '/dashboard';
+                const userRole = (data.role || '').toLowerCase();
+                if (userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    window.location.href = '/mobile-only';
+                }
             } else {
                 setError(data.message || 'Invalid credentials');
                 setLoading(false);
@@ -77,8 +80,12 @@ export default function LoginPage() {
 
             const data = await res.json();
             if (data.ok) {
-                // Token & cookie are set by the server — just redirect
-                window.location.href = '/dashboard';
+                const userRole = (data.role || '').toLowerCase();
+                if (userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    window.location.href = '/mobile-only';
+                }
             } else {
                 setError(data.message || 'Invalid 2FA code');
                 setLoading(false);

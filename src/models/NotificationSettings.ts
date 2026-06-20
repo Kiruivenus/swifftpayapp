@@ -17,6 +17,50 @@ const NotificationSettingsSchema = new Schema({
         type: Boolean,
         default: true,
     },
+    failedLoginAttempts: {
+        type: Boolean,
+        default: true,
+    },
+    passwordChanged: {
+        type: Boolean,
+        default: true,
+    },
+    newDeviceLogin: {
+        type: Boolean,
+        default: true,
+    },
+    withdrawalRejected: {
+        type: Boolean,
+        default: true,
+    },
+    depositFailed: {
+        type: Boolean,
+        default: true,
+    },
+    kycSubmitted: {
+        type: Boolean,
+        default: true,
+    },
+    kycApproved: {
+        type: Boolean,
+        default: true,
+    },
+    kycRejected: {
+        type: Boolean,
+        default: true,
+    },
+    referralReward: {
+        type: Boolean,
+        default: true,
+    },
+    accountSuspended: {
+        type: Boolean,
+        default: true,
+    },
+    maintenanceAlerts: {
+        type: Boolean,
+        default: true,
+    },
     updatedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',

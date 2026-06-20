@@ -39,6 +39,10 @@ export async function GET(req: NextRequest) {
             }
         });
     } catch (err: any) {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] Broadcast GET error: ${err.stack || err.message || err}\n`;
+        fs.appendFileSync('./error.log', logMsg);
+        console.error("BROADCAST GET ROUTE ERROR:", err);
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
@@ -55,6 +59,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, message: 'Required fields missing' }, { status: 400 });
         }
 
+        const sanitizeHtml = (str: string) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const cleanTitle = sanitizeHtml(title.trim());
+        const cleanMessage = sanitizeHtml(message.trim());
+
         await dbConnect();
 
         // 1. Resolve Recipients
@@ -65,8 +73,8 @@ export async function POST(req: NextRequest) {
         // 2. Create Broadcast Record
         const broadcast = await Broadcast.create({
             createdByAdminId: admin.id,
-            title,
-            message,
+            title: cleanTitle,
+            message: cleanMessage,
             targetAudience,
             channels,
             status: sendNow ? 'QUEUED' : 'DRAFT',
@@ -106,8 +114,8 @@ export async function POST(req: NextRequest) {
                     });
                     userNotifications.push({
                         userId: recipient._id,
-                        title,
-                        message,
+                        title: cleanTitle,
+                        message: cleanMessage,
                         type: 'BROADCAST',
                         refId: broadcast._id.toString()
                     });
@@ -123,7 +131,7 @@ export async function POST(req: NextRequest) {
             for (const recipient of recipients) {
                 if (channels.push || channels.email) {
                     // Fire and forget (don't await each to avoid timeout)
-                    sendNotification(recipient._id.toString(), title, message, 'BROADCAST', {
+                    sendNotification(recipient._id.toString(), cleanTitle, cleanMessage, 'BROADCAST', {
                         push: !!channels.push,
                         email: !!channels.email,
                         inApp: false, // already created above
@@ -132,11 +140,10 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            // Update stats for in-app
-            if (channels.inApp) {
-                broadcast.stats.sent += targetedCount;
-                await broadcast.save();
-            }
+            // Update stats and status
+            broadcast.stats.sent = targetedCount;
+            broadcast.status = 'SENT';
+            await broadcast.save();
 
             // Audit
             await logAdminAction({
@@ -146,7 +153,7 @@ export async function POST(req: NextRequest) {
                 actionType: 'SEND_BROADCAST',
                 targetType: 'SYSTEM',
                 targetId: broadcast._id.toString(),
-                details: { title, targetedCount, channels },
+                details: { title: cleanTitle, targetedCount, channels },
                 ipAddress: req.headers.get('x-forwarded-for') || 'Unknown',
                 userAgent: req.headers.get('user-agent') || 'Unknown',
                 severity: 'INFO'
@@ -155,6 +162,10 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ success: true, ...broadcast.toObject() });
     } catch (err: any) {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] Broadcast POST error: ${err.stack || err.message || err}\n`;
+        fs.appendFileSync('./error.log', logMsg);
+        console.error("BROADCAST POST ROUTE ERROR:", err);
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }

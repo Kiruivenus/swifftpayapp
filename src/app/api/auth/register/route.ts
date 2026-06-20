@@ -97,9 +97,9 @@ export async function POST(request: NextRequest) {
             email2FAEnabled: true,
             biometricEnabled: false,
             notificationPrefs: {
-                enabled: false,
-                transactions: false,
-                security: false,
+                enabled: true,
+                transactions: true,
+                security: true,
                 promotions: false
             }
         });

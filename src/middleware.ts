@@ -28,8 +28,10 @@ export async function middleware(request: NextRequest) {
         request.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
-        // Redirect standard users and unauthenticated users to login
-        if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
+        if (pathname.startsWith('/dashboard')) {
+            return NextResponse.redirect(new URL('/mobile-only', request.url));
+        }
+        if (pathname.startsWith('/admin')) {
             return NextResponse.redirect(new URL('/login', request.url));
         }
         return NextResponse.next();
@@ -41,26 +43,27 @@ export async function middleware(request: NextRequest) {
 
         // 3. RBAC Redirection Logic
 
-        // Admin Routes Protection
-        if (pathname.startsWith('/admin')) {
-            if (role === 'user') {
-                return NextResponse.redirect(new URL('/dashboard', request.url));
+        // If the logged-in user is a standard user, block them from all web pages except /mobile-only
+        const isApiRoute = pathname.startsWith('/api/');
+        if (role === 'user') {
+            if (pathname !== '/mobile-only' && !isApiRoute) {
+                return NextResponse.redirect(new URL('/mobile-only', request.url));
             }
-            // Authorized admin roles
+            return NextResponse.next();
+        }
+
+        // Admin Routes Protection (Only reached by admins)
+        if (pathname.startsWith('/admin')) {
             return NextResponse.next();
         }
 
         // Dashboard Protection
         if (pathname.startsWith('/dashboard')) {
-            // Authorized users can access the dashboard
-            return NextResponse.next();
+            return NextResponse.redirect(new URL('/admin/dashboard', request.url));
         }
 
-        // User Mobile Redirect Gating
-        if (pathname === '/mobile-only' && role === 'user') {
-            return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-        if (pathname === '/mobile-only' && role !== 'user') {
+        // Gating for mobile-only page (if admin tries to visit, send to admin dashboard)
+        if (pathname === '/mobile-only') {
             return NextResponse.redirect(new URL('/admin/dashboard', request.url));
         }
 

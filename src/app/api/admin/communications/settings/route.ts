@@ -16,7 +16,12 @@ export async function PUT(req: NextRequest) {
         const settings = await (NotificationSettings as any).getSettings();
         const before = JSON.parse(JSON.stringify(settings));
 
-        const allowedFields = ['newLoginDetected', 'kycStatusUpdates', 'depositSuccessful', 'withdrawalProcessed'];
+        const allowedFields = [
+            'newLoginDetected', 'kycStatusUpdates', 'depositSuccessful', 'withdrawalProcessed',
+            'failedLoginAttempts', 'passwordChanged', 'newDeviceLogin', 'withdrawalRejected',
+            'depositFailed', 'kycSubmitted', 'kycApproved', 'kycRejected',
+            'referralReward', 'accountSuspended', 'maintenanceAlerts'
+        ];
         allowedFields.forEach(field => {
             if (body[field] !== undefined) {
                 settings[field] = body[field];

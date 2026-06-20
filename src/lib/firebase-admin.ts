@@ -23,5 +23,13 @@ if (!admin.apps.length) {
     }
 }
 
-export const fcm = admin.messaging();
+export const fcm = admin.apps.length 
+    ? admin.messaging() 
+    : {
+        sendEachForMulticast: async (payload: any) => {
+            console.warn('FCM sendEachForMulticast skipped: Firebase Admin is not initialized.');
+            return { successCount: 0, failureCount: 0, responses: [] };
+        }
+      } as any;
+
 export default admin;

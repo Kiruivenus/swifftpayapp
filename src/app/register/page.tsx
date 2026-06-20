@@ -139,7 +139,7 @@ export default function RegisterPage() {
 
             const data = await res.json();
             if (data.token) {
-                router.push('/dashboard');
+                router.push('/mobile-only');
             } else {
                 setError(data.message || 'Verification failed');
             }

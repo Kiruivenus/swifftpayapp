@@ -21,8 +21,12 @@ export async function POST(req: NextRequest) {
         const query = await resolveAudienceFilter(targetAudience);
         const count = await User.countDocuments(query);
 
-        return NextResponse.json({ success: true, data: { targeted: count } });
+        return NextResponse.json({ success: true, targeted: count });
     } catch (err: any) {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] Estimate error: ${err.stack || err.message || err}\n`;
+        fs.appendFileSync('./error.log', logMsg);
+        console.error("ESTIMATE ROUTE ERROR:", err);
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }

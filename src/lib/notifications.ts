@@ -54,13 +54,31 @@ export async function sendNotification(
 
         // 3. In-App Notification
         if (inApp) {
-            await UserNotification.create({
+            const notif = await UserNotification.create({
                 userId,
                 title,
                 message,
                 type,
                 refId
             });
+
+            // Broadcast via Server-Sent Events (SSE) for real-time drawer updates
+            try {
+                const { broadcastSSE } = await import('./sse');
+                broadcastSSE('notification', {
+                    userId,
+                    notification: {
+                        _id: notif._id,
+                        title,
+                        message,
+                        type,
+                        read: false,
+                        createdAt: notif.createdAt
+                    }
+                });
+            } catch (sseErr) {
+                console.error('[SSE] Failed to broadcast live notification event:', sseErr);
+            }
         }
 
         // 4. Push Notification
@@ -78,6 +96,9 @@ export async function sendNotification(
                             body: message,
                         },
                         data: {
+                            title,
+                            body: message,
+                            message,
                             type,
                             category: type === 'FINANCE' ? 'transactions' : 'alerts',
                             refId: refId || '',
@@ -93,8 +114,41 @@ export async function sendNotification(
                         }
                     });
                     console.log(`[PUSH] Sent to user ${userId} (${fcmTokens.length} devices)`);
-                } catch (fcmError) {
+
+                    // Update delivery status if it's a broadcast
+                    if (type === 'BROADCAST' && refId) {
+                        try {
+                            const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                            await BroadcastDelivery.updateOne(
+                                { broadcastId: refId, userId, channel: 'push' },
+                                { status: 'SENT', sentAt: new Date() }
+                            );
+                        } catch (dbErr) {
+                            console.error('[PUSH] Failed to update BroadcastDelivery status:', dbErr);
+                        }
+                    }
+                } catch (fcmError: any) {
                     console.error('[PUSH] FCM error:', fcmError);
+                    if (type === 'BROADCAST' && refId) {
+                        try {
+                            const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                            await BroadcastDelivery.updateOne(
+                                { broadcastId: refId, userId, channel: 'push' },
+                                { status: 'FAILED', errorMessage: fcmError.message || String(fcmError) }
+                            );
+                        } catch (dbErr) {}
+                    }
+                }
+            } else {
+                // No tokens registered
+                if (type === 'BROADCAST' && refId) {
+                    try {
+                        const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                        await BroadcastDelivery.updateOne(
+                            { broadcastId: refId, userId, channel: 'push' },
+                            { status: 'FAILED', errorMessage: 'No FCM tokens registered for this user' }
+                        );
+                    } catch (dbErr) {}
                 }
             }
         }
@@ -109,8 +163,27 @@ export async function sendNotification(
                     title: title
                 });
                 console.log(`[EMAIL] Sent to ${user.email}`);
-            } catch (emailErr) {
+
+                if (type === 'BROADCAST' && refId) {
+                    try {
+                        const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                        await BroadcastDelivery.updateOne(
+                            { broadcastId: refId, userId, channel: 'email' },
+                            { status: 'SENT', sentAt: new Date() }
+                        );
+                    } catch (dbErr) {}
+                }
+            } catch (emailErr: any) {
                 console.error('[EMAIL] Failed to send:', emailErr);
+                if (type === 'BROADCAST' && refId) {
+                    try {
+                        const BroadcastDelivery = (await import('@/models/BroadcastDelivery')).default;
+                        await BroadcastDelivery.updateOne(
+                            { broadcastId: refId, userId, channel: 'email' },
+                            { status: 'FAILED', errorMessage: emailErr.message || String(emailErr) }
+                        );
+                    } catch (dbErr) {}
+                }
             }
         }
 
