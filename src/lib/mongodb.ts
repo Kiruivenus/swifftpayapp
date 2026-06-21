@@ -1,5 +1,12 @@
 import mongoose from 'mongoose';
 
+// Eagerly import core models to prevent Mongoose schema registration errors in Next.js
+import '@/models/User';
+import '@/models/Wallet';
+import '@/models/Transaction';
+import '@/models/PlatformSettings';
+import '@/models/Referral';
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {

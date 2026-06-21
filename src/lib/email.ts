@@ -126,6 +126,8 @@ export async function sendEmail({ to, subject, body, code, title, actionText, ac
                     resendAttachments.push({
                         filename: 'logo.png',
                         content: logoBase64,
+                        content_id: 'logo',
+                        contentId: 'logo',
                         id: 'logo'
                     });
                 }
