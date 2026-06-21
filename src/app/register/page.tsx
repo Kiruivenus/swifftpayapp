@@ -11,7 +11,9 @@ import {
     ShieldCheck,
     ArrowLeft,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,6 +31,9 @@ export default function RegisterPage() {
         confirmPassword: '',
     });
     const [countries, setCountries] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -176,144 +181,221 @@ export default function RegisterPage() {
         if (step > 1 && step < 3) setStep(step - 1);
     };
 
+    // Filter country list by search query
+    const filteredCountries = countries.filter(c => 
+        c.countryName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        c.countryCode.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 selection:bg-rose-500/30">
-            {/* Background Decor */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-rose-600/10 blur-[100px] rounded-full -z-10" />
+        <div className="min-h-screen bg-[#050816] text-[#F3F4F6] flex flex-col justify-center items-center px-4 sm:px-6 relative overflow-hidden font-sans selection:bg-[#FF6B00]/30">
+            
+            {/* Sticky Header */}
+            <header className="fixed top-0 left-0 w-full h-[70px] md:h-[80px] z-50 bg-[#050816]/75 backdrop-blur-md border-b border-[#1E2533]/40 flex items-center justify-between px-6">
+              <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+                <img src="/logo.png" alt="SwiftPay Logo" className="w-8 h-8 object-contain rounded-xl shadow-lg shadow-[#FF6B00]/10 group-hover:scale-105 transition-transform" />
+                <span className="text-lg font-bold tracking-tight text-white">SwiftPay</span>
+              </Link>
+              
+              <button 
+                onClick={step > 1 && step < 3 ? handleBack : () => router.push('/')}
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-[#0D1017]/80 px-3 py-1.5 rounded-lg border border-[#1E2533]/50"
+              >
+                <ArrowLeft size={14} /> {step > 1 && step < 3 ? 'Back' : 'Back to Website'}
+              </button>
+            </header>
 
-            <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="pt-6" />
-                    <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
-                    <p className="text-slate-500 text-sm">Join the next generation of African fintech.</p>
+            {/* Ambient Background Radial Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.04)_0%,transparent_70%)] rounded-full -z-10 pointer-events-none" />
 
-                {/* Progress Bar */}
-                <div className="flex items-center justify-between px-2">
-                    {[1, 2, 3].map((num) => (
-                        <div key={num} className="flex items-center">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${step >= num ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-600/20' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>
-                                {num}
-                            </div>
-                            {num < 3 && (
-                                <div className={`w-20 h-0.5 mx-2 transition-all ${step > num ? 'bg-rose-600' : 'bg-slate-800'}`} />
-                            )}
-                        </div>
-                    ))}
+            <div className="w-full max-w-md pt-24 pb-10 space-y-6 z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                
+                {/* Header Onboarding Title */}
+                <div className="text-center space-y-1.5">
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Create Your Account</h1>
+                    <p className="text-slate-400 text-xs sm:text-sm">Set up your account and access borderless payments</p>
                 </div>
 
-                {/* Step Card */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                {/* Onboarding Progress Tracker */}
+                <div className="flex items-center justify-between w-full px-1.5 select-none">
+                    <div className="flex flex-col items-center">
+                        <span className={`text-[9px] font-black uppercase tracking-wider transition-colors ${step >= 1 ? 'text-[#FF6B00]' : 'text-slate-600'}`}>Account Setup</span>
+                        <div className={`w-3 h-3 rounded-full mt-1.5 border-2 transition-all ${step >= 1 ? 'bg-[#FF6B00] border-[#FF6B00] shadow-md shadow-[#FF6B00]/25' : 'bg-slate-900 border-slate-800'}`} />
+                    </div>
+                    <div className={`flex-1 h-0.5 mx-2 -mt-1 transition-colors ${step > 1 ? 'bg-[#FF6B00]' : 'bg-slate-800'}`} />
+                    
+                    <div className="flex flex-col items-center">
+                        <span className={`text-[9px] font-black uppercase tracking-wider transition-colors ${step >= 2 ? 'text-[#FF6B00]' : 'text-slate-600'}`}>Personal Details</span>
+                        <div className={`w-3 h-3 rounded-full mt-1.5 border-2 transition-all ${step >= 2 ? 'bg-[#FF6B00] border-[#FF6B00] shadow-md shadow-[#FF6B00]/25' : 'bg-slate-900 border-slate-800'}`} />
+                    </div>
+                    <div className={`flex-1 h-0.5 mx-2 -mt-1 transition-colors ${step > 2 ? 'bg-[#FF6B00]' : 'bg-slate-800'}`} />
+                    
+                    <div className="flex flex-col items-center">
+                        <span className={`text-[9px] font-black uppercase tracking-wider transition-colors ${step >= 3 ? 'text-[#FF6B00]' : 'text-slate-600'}`}>Verification</span>
+                        <div className={`w-3 h-3 rounded-full mt-1.5 border-2 transition-all ${step >= 3 ? 'bg-[#FF6B00] border-[#FF6B00] shadow-md shadow-[#FF6B00]/25' : 'bg-slate-900 border-slate-800'}`} />
+                    </div>
+                </div>
+
+                {/* Step Card Container */}
+                <div className="bg-[#0D1017] border border-[#1E2533] rounded-[24px] p-6 sm:p-8 shadow-2xl relative overflow-hidden shadow-[#FF6B00]/5 hover:border-[#FF6B00]/20 transition-all">
+                    
                     {/* Error Display */}
                     {error && (
-                        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-400 text-sm font-bold animate-in fade-in zoom-in-95">
-                            <AlertCircle size={18} />
-                            {error}
+                        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-400 text-xs font-bold animate-in fade-in zoom-in-95">
+                            <AlertCircle size={18} className="shrink-0" />
+                            <span>{error}</span>
                         </div>
                     )}
 
                     {/* Step 1: Localization */}
                     {step === 1 && (
-                        <div className="space-y-6 animate-in fade-in duration-500">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Step 1: Region</label>
-                                <h3 className="text-lg font-bold text-white">Where are you located?</h3>
+                        <div className="space-y-5 animate-in fade-in duration-500 text-left">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest pl-1">Step 1: Region Selection</label>
+                                <h3 className="text-base font-bold text-white">Select your country of residence</h3>
                             </div>
 
-                            <div className="space-y-3">
+                            {/* Custom Search Box */}
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search country..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full px-4 py-3.5 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00] rounded-xl text-white placeholder:text-slate-600 focus:outline-none transition-all text-sm font-medium"
+                                />
+                            </div>
+
+                            {/* Dropdown Items Selection */}
+                            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                                 {loading ? (
-                                    <div className="flex justify-center py-10">
-                                        <Loader2 className="animate-spin text-rose-500" size={32} />
+                                    <div className="flex justify-center py-8">
+                                        <Loader2 className="animate-spin text-[#FF6B00]" size={28} />
                                     </div>
                                 ) : (
-                                    countries.map((c) => (
+                                    filteredCountries.map((c) => (
                                         <button
                                             key={c.countryCode}
                                             onClick={() => handleSelectCountry(c)}
-                                            className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${formData.countryCode === c.countryCode ? 'bg-rose-600/10 border-rose-500/50 text-white shadow-[0_0_20px_rgba(225,29,72,0.1)]' : 'bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700'}`}
+                                            className={`w-full flex items-center justify-between p-3.5 rounded-xl border transition-all ${formData.countryCode === c.countryCode ? 'bg-[#FF6B00]/10 border-[#FF6B00]/50 text-white' : 'bg-[#050816] border-[#1E2533] text-slate-400 hover:border-slate-700'}`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className="text-xl">🌍</span>
-                                                <span className="font-bold">{c.countryName}</span>
+                                                <div className="w-8 h-8 rounded-lg bg-[#050816] border border-[#1E2533] flex items-center justify-center font-bold text-xs text-[#FF6B00]">
+                                                    {c.countryCode}
+                                                </div>
+                                                <span className="font-bold text-sm text-white">{c.countryName}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-black uppercase bg-slate-800 px-2 py-1 rounded text-slate-500">{c.defaultCurrency}</span>
-                                                {formData.countryCode === c.countryCode && <CheckCircle2 size={18} className="text-rose-400" />}
+                                                <span className="text-[9px] font-black uppercase bg-[#050816] border border-[#1E2533]/50 px-2 py-1 rounded text-slate-500">{c.defaultCurrency}</span>
+                                                {formData.countryCode === c.countryCode && <CheckCircle2 size={16} className="text-[#FF6B00]" />}
                                             </div>
                                         </button>
                                     ))
                                 )}
-                                {!loading && countries.length === 0 && (
-                                    <p className="text-center text-slate-500 text-xs py-4">No supported regions available.</p>
+                                {!loading && filteredCountries.length === 0 && (
+                                    <p className="text-center text-slate-500 text-xs py-6">No matching countries found.</p>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* Step 2: Identification */}
+                    {/* Step 2: Personal Details */}
                     {step === 2 && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Step 2: Account Details</label>
-                                <h3 className="text-lg font-bold text-white">Set up your profile</h3>
+                        <div className="space-y-5 text-left animate-in fade-in slide-in-from-right-4 duration-500">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest pl-1">Step 2: Profile setup</label>
+                                <h3 className="text-base font-bold text-white">Enter your credentials</h3>
                             </div>
 
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="relative group">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Username</label>
                                         <input
                                             type="text"
-                                            placeholder="Username"
+                                            placeholder="johndoe"
                                             value={formData.username}
                                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                            className="w-full px-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-all font-medium text-sm"
+                                            className="w-full px-4 py-3 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] rounded-xl text-white placeholder:text-slate-600 focus:outline-none transition-all font-medium text-sm"
                                         />
                                     </div>
-                                    <div className="relative group flex">
-                                        <div className="bg-slate-900 border border-slate-800 text-slate-500 px-3 py-4 rounded-l-2xl text-sm font-bold flex items-center">
-                                            {formData.dialCode}
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Phone Number</label>
+                                        <div className="relative flex">
+                                            <div className="bg-[#050816] border border-[#1E2533] text-slate-500 px-3 py-3 rounded-l-xl text-xs font-bold flex items-center shrink-0 border-r-0">
+                                                {formData.dialCode}
+                                            </div>
+                                            <input
+                                                type="tel"
+                                                placeholder="712345678"
+                                                value={formData.phone}
+                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                                                className="w-full px-3 py-3 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] rounded-r-xl text-white placeholder:text-slate-600 focus:outline-none transition-all font-medium text-sm"
+                                            />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Email Address</label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-[#FF6B00] transition-colors" size={18} />
                                         <input
-                                            type="tel"
-                                            placeholder="Phone"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                                            className="w-full px-4 py-4 bg-slate-950/50 border border-slate-800 border-l-0 rounded-r-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-all font-medium text-sm"
+                                            type="email"
+                                            placeholder="name@example.com"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            className="w-full pl-11 pr-4 py-3.5 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] rounded-xl text-white placeholder:text-slate-600 focus:outline-none transition-all font-medium text-sm"
                                         />
                                     </div>
                                 </div>
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-rose-400 transition-colors" size={20} />
-                                    <input
-                                        type="email"
-                                        placeholder="Email Address"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-all font-medium"
-                                    />
+
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Choose Password</label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-[#FF6B00] transition-colors" size={18} />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                            className="w-full pl-11 pr-11 py-3.5 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] rounded-xl text-white placeholder:text-slate-600 focus:outline-none transition-all font-medium text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-rose-400 transition-colors" size={20} />
-                                    <input
-                                        type="password"
-                                        placeholder="Choose Password"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-all font-medium"
-                                    />
+
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Confirm Password</label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-[#FF6B00] transition-colors" size={18} />
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            value={formData.confirmPassword}
+                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                            className="w-full pl-11 pr-11 py-3.5 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] rounded-xl text-white placeholder:text-slate-600 focus:outline-none transition-all font-medium text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors"
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-rose-400 transition-colors" size={20} />
-                                    <input
-                                        type="password"
-                                        placeholder="Confirm Password"
-                                        value={formData.confirmPassword}
-                                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-all font-medium"
-                                    />
-                                </div>
-                                <div className="flex items-start gap-3 p-3 bg-rose-500/5 border border-rose-500/10 rounded-xl">
-                                    <ShieldCheck size={16} className="text-rose-400 shrink-0 mt-0.5" />
+
+                                <div className="flex items-start gap-3 p-3 bg-[#050816] border border-[#1E2533] rounded-xl">
+                                    <ShieldCheck size={16} className="text-[#FF6B00] shrink-0 mt-0.5" />
                                     <p className="text-[10px] text-slate-500 leading-relaxed">
-                                        Email and password will be used for all future logins. 2FA is enabled by default for new devices.
+                                        Credentials will secure all wallet access. Multi-factor device tracking is enabled immediately.
                                     </p>
                                 </div>
                             </div>
@@ -322,35 +404,35 @@ export default function RegisterPage() {
 
                     {/* Step 3: Email Verification */}
                     {step === 3 && (
-                        <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Step 3: Verification</label>
-                                <h3 className="text-lg font-bold text-white">Check your email</h3>
+                        <div className="space-y-5 text-left animate-in zoom-in-95 duration-500">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest pl-1">Step 3: Verification</label>
+                                <h3 className="text-base font-bold text-white">Check your email</h3>
                             </div>
-                            <div className="text-center py-4">
-                                <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
-                                    <Mail size={32} className="text-rose-400" />
+                            <div className="text-center py-2">
+                                <div className="w-14 h-14 bg-[#FF6B00]/10 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-[#FF6B00]/20">
+                                    <Mail size={28} className="text-[#FF6B00]" />
                                 </div>
-                                <p className="text-slate-500 text-sm leading-relaxed px-4">
+                                <p className="text-slate-400 text-xs leading-relaxed px-4">
                                     We sent a 6-digit verification code to <br />
                                     <span className="text-white font-bold">{formData.email}</span>
                                 </p>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 <input
                                     type="text"
                                     maxLength={6}
                                     placeholder="000000"
                                     value={verificationCode}
                                     onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                                    className="w-full px-4 py-6 bg-slate-950/50 border border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-all font-black text-3xl tracking-[0.5em] text-center"
+                                    className="w-full px-4 py-4 bg-[#050816] border border-[#1E2533] focus:border-[#FF6B00] rounded-xl text-white placeholder:text-slate-600 focus:outline-none transition-all font-black text-2xl tracking-[0.5em] text-center"
                                 />
 
                                 <button
                                     onClick={resendCode}
                                     disabled={submitting}
-                                    className="w-full text-rose-400 text-xs font-bold hover:text-rose-300 transition-colors disabled:text-slate-600"
+                                    className="w-full text-[#FF6B00] text-xs font-bold hover:text-[#FF7A00] transition-colors disabled:text-slate-600 text-center"
                                 >
                                     Didn't receive a code? Resend
                                 </button>
@@ -358,14 +440,14 @@ export default function RegisterPage() {
                         </div>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-4 mt-10">
+                    {/* Action Triggers */}
+                    <div className="flex items-center gap-4 mt-8 pt-2">
                         {step > 1 && step < 3 && (
                             <button
                                 onClick={handleBack}
-                                className="p-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl transition-all border border-slate-700"
+                                className="p-4 bg-[#050816] hover:bg-slate-900 text-white rounded-xl transition-all border border-[#1E2533]"
                             >
-                                <ArrowLeft size={20} />
+                                <ArrowLeft size={18} />
                             </button>
                         )}
                         <button
@@ -376,26 +458,27 @@ export default function RegisterPage() {
                                 (step === 3 && verificationCode.length !== 6) ||
                                 submitting
                             }
-                            className="flex-1 py-4 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-black rounded-2xl flex items-center justify-center gap-3 transition-all shadow-xl shadow-rose-600/20"
+                            className="flex-1 py-4 bg-gradient-to-r from-[#FF6B00] to-orange-500 hover:from-orange-500 hover:to-[#FF6B00] disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B00]/10 hover:shadow-[#FF6B00]/25 transition-all hover:scale-[1.01]"
                         >
                             {submitting ? (
                                 <>
-                                    <Loader2 className="animate-spin" size={20} />
+                                    <Loader2 className="animate-spin" size={18} />
                                     <span>Processing...</span>
                                 </>
                             ) : (
                                 <>
-                                    {step === 3 ? 'Verify & Finish' : 'Continue'} <ArrowRight size={20} />
+                                    <span>{step === 3 ? 'Verify & Finish' : 'Continue'}</span>
+                                    <ArrowRight size={18} />
                                 </>
                             )}
                         </button>
                     </div>
                 </div>
 
-                {/* Already have an account? */}
+                {/* Already have an account */}
                 {step < 3 && (
                     <p className="text-center text-sm text-slate-500 font-medium">
-                        Already have an account? <Link href="/login" className="text-rose-400 hover:text-rose-300 font-bold transition-colors">Sign In</Link>
+                        Already have an account? <Link href="/login" className="text-[#FF6B00] hover:text-[#FF7A00] font-bold transition-colors">Sign In</Link>
                     </p>
                 )}
             </div>
