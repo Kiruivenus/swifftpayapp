@@ -11,7 +11,7 @@ const KycRequestSchema = new Schema({
     nationality: String,
     documentType: {
         type: String,
-        enum: ['NATIONAL_ID', 'PASSPORT', 'DRIVING_LICENCE'],
+        enum: ['NATIONAL_ID', 'PASSPORT', 'DRIVING_LICENCE', 'PROOF_OF_ADDRESS'],
         required: true,
     },
     documentNumber: {
@@ -27,12 +27,30 @@ const KycRequestSchema = new Schema({
         type: String,
         required: true,
     },
+    proofOfAddressUrl: String,
     status: {
         type: String,
-        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        enum: ['PENDING', 'APPROVED', 'REJECTED', 'ESCALATED', 'RESUBMISSION_REQUESTED'],
         default: 'PENDING',
     },
     rejectionReason: String,
+    internalNotes: String,
+    aiChecks: {
+        isBlurry: { type: Boolean, default: false },
+        isDuplicate: { type: Boolean, default: false },
+        isEdited: { type: Boolean, default: false },
+        isExpired: { type: Boolean, default: false },
+        dataMismatch: { type: Boolean, default: false },
+        riskScore: { type: Number, default: 0 },
+        faceMatchConfidence: { type: Number, default: 0 }
+    },
+    auditTrail: [{
+        reviewerName: String,
+        reviewerRole: String,
+        action: String,
+        timestamp: { type: Date, default: Date.now },
+        notes: String
+    }],
     submittedAt: {
         type: Date,
         default: Date.now,

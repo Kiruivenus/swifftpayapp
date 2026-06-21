@@ -32,7 +32,7 @@ const TransactionSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['PENDING', 'SUCCESS', 'FAILED'],
+        enum: ['PENDING', 'SUCCESS', 'FAILED', 'HOLD', 'ESCALATED', 'REVERSED'],
         default: 'PENDING',
     },
     mpesaReceiptNumber: String,

@@ -100,6 +100,47 @@ class AdminService {
         });
     }
 
+    async getUserIntelligence(id: string) {
+        return this.fetchJson(`/api/admin/users/${id}/intelligence`);
+    }
+
+    async resetUserPassword(id: string, password: string) {
+        return this.fetchJson(`/api/admin/users/${id}/reset-password`, {
+            method: 'POST',
+            body: JSON.stringify({ password }),
+        });
+    }
+
+    async forceUserLogout(id: string) {
+        return this.fetchJson(`/api/admin/users/${id}/force-logout`, {
+            method: 'POST',
+        });
+    }
+
+    async adjustUserBalance(id: string, data: { currency: string; amount: number; type: 'CREDIT' | 'DEBIT'; reason: string }) {
+        return this.fetchJson(`/api/admin/users/${id}/adjust-balance`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async sendUserNotification(id: string, data: { title: string; message: string; type?: string }) {
+        return this.fetchJson(`/api/admin/users/${id}/send-notification`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async deleteUser(id: string) {
+        return this.fetchJson(`/api/admin/users/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getUserAnalytics() {
+        return this.fetchJson('/api/admin/users/analytics');
+    }
+
     // KYC
     async getKycRequests(params: { status?: string; page?: number; limit?: number }) {
         const query = new URLSearchParams(params as any).toString();
@@ -114,6 +155,17 @@ class AdminService {
         return this.fetchJson(`/api/admin/kyc/${id}/reject`, {
             method: 'POST',
             body: JSON.stringify({ reason }),
+        });
+    }
+
+    async getKycAnalytics() {
+        return this.fetchJson('/api/admin/kyc/analytics');
+    }
+
+    async submitKycAction(id: string, action: string, details: { reason?: string; notes?: string } = {}) {
+        return this.fetchJson(`/api/admin/kyc/${id}/action`, {
+            method: 'POST',
+            body: JSON.stringify({ action, ...details }),
         });
     }
 
@@ -157,7 +209,7 @@ class AdminService {
         });
     }
 
-    async getFinanceMetrics(params: { from?: string; to?: string } = {}) {
+    async getFinanceMetrics(params: { range?: string; from?: string; to?: string } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/finance/metrics?${query}`);
     }
@@ -180,6 +232,25 @@ class AdminService {
             method: 'POST',
             body: JSON.stringify({ reason }),
         });
+    }
+
+    async submitWithdrawalAction(id: string, action: 'APPROVE' | 'REJECT' | 'HOLD' | 'ESCALATE' | 'REVERSE', details: { reason?: string } = {}) {
+        return this.fetchJson(`/api/admin/withdrawals/${id}/action`, {
+            method: 'POST',
+            body: JSON.stringify({ action, ...details }),
+        });
+    }
+
+    async overrideRatePair(data: { baseCurrency: string; quoteCurrency: string; rate: number }) {
+        return this.fetchJson('/api/admin/rates/override', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    getFinanceExportUrl(params: { reportType: string; format: string; from?: string; to?: string }) {
+        const query = new URLSearchParams(params as any).toString();
+        return `/api/admin/finance/export?${query}`;
     }
 
     // Balance Holds

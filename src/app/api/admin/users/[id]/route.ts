@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Session from '@/models/Session';
+import KycRequest from '@/models/KycRequest';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
@@ -45,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         const oldRole = user.role;
         const oldStatus = user.status;
+        const oldKycStatus = user.kycStatus;
 
         // Perform update
         const updatedUser = await User.findByIdAndUpdate(
@@ -52,6 +55,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             { $set: body },
             { returnDocument: 'after' }
         );
+
+        // Sync related Pending KYC requests if kycStatus changed
+        if (body.kycStatus && body.kycStatus !== oldKycStatus) {
+            await KycRequest.findOneAndUpdate(
+                { userId: id, status: 'PENDING' },
+                {
+                    $set: {
+                        status: body.kycStatus,
+                        reviewedAt: new Date(),
+                        reviewedBy: admin.id,
+                        rejectionReason: body.kycRejectionReason || ''
+                    }
+                }
+            );
+        }
 
         // Audit log
         const ip = req.headers.get('x-forwarded-for') || 'Unknown';
@@ -83,8 +101,71 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 userAgent: ua
             });
         }
+        if (body.kycStatus && body.kycStatus !== oldKycStatus) {
+            await logAdminAction({
+                actorId: admin.id,
+                actorName: admin.name || admin.email,
+                actorRole: admin.role,
+                actionType: body.kycStatus === 'APPROVED' ? 'APPROVE_KYC' : 'REJECT_KYC',
+                targetType: 'USER',
+                targetId: id,
+                details: { oldKycStatus, newKycStatus: body.kycStatus, reason: body.kycRejectionReason },
+                ipAddress: ip,
+                userAgent: ua
+            });
+        }
 
         return NextResponse.json(updatedUser);
+
+    } catch (err: any) {
+        return NextResponse.json({ message: err.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const { error, user: admin } = await validateAdmin(req, PERMISSIONS.MANAGE_USERS);
+    if (error) return error;
+
+    try {
+        await dbConnect();
+        const user = await User.findById(id);
+        if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
+
+        if (user.role === 'super_admin' && admin.role !== 'super_admin') {
+            return NextResponse.json({ message: 'Only super admins can delete other super admins.' }, { status: 403 });
+        }
+
+        // Soft Delete: sets isDeleted = true, status = BLOCKED
+        user.isDeleted = true;
+        user.deletedAt = new Date();
+        user.status = 'BLOCKED';
+        await user.save();
+
+        // Invalidate all active sessions for this user
+        await Session.updateMany(
+            { userId: id, status: 'active' },
+            { $set: { status: 'revoked' } }
+        );
+
+        // Audit Log
+        const ip = req.headers.get('x-forwarded-for') || 'Unknown';
+        const ua = req.headers.get('user-agent') || 'Unknown';
+
+        await logAdminAction({
+            actorId: admin.id,
+            actorName: admin.name || admin.email,
+            actorRole: admin.role,
+            actionType: 'DELETE_USER',
+            targetType: 'USER',
+            targetId: id,
+            details: { username: user.username, email: user.email },
+            ipAddress: ip,
+            userAgent: ua,
+            severity: 'CRITICAL'
+        });
+
+        return NextResponse.json({ success: true, message: 'User soft-deleted and all sessions terminated.' });
 
     } catch (err: any) {
         return NextResponse.json({ message: err.message }, { status: 500 });

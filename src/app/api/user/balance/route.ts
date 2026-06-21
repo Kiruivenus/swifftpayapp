@@ -17,16 +17,16 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
 
-        // Calculate pending amounts for KES (only pending withdrawals)
+        // Calculate pending amounts for KES (only pending/held/escalated withdrawals)
         const pendingKES = await Transaction.aggregate([
-            { $match: { userId: user.id, currency: 'KES', type: 'WITHDRAW', status: 'PENDING' } },
+            { $match: { userId: user.id, currency: 'KES', type: 'WITHDRAW', status: { $in: ['PENDING', 'HOLD', 'ESCALATED'] } } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
         const pendingAmountKES = pendingKES.length > 0 ? pendingKES[0].total : 0;
 
-        // Calculate pending amounts for USDT (only pending withdrawals)
+        // Calculate pending amounts for USDT (only pending/held/escalated withdrawals)
         const pendingUSDT = await Transaction.aggregate([
-            { $match: { userId: user.id, currency: 'USDT', type: 'WITHDRAW', status: 'PENDING' } },
+            { $match: { userId: user.id, currency: 'USDT', type: 'WITHDRAW', status: { $in: ['PENDING', 'HOLD', 'ESCALATED'] } } },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
         const pendingAmountUSDT = pendingUSDT.length > 0 ? pendingUSDT[0].total : 0;
