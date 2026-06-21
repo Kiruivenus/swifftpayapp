@@ -82,9 +82,6 @@ export default function LandingPage() {
               <Link href="/register" className="w-full sm:w-auto px-7 py-3.5 bg-[#FF6B00] hover:bg-[#FF7A00] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B00]/25 transition-all hover:scale-[1.02]">
                 Get Started <ArrowRight size={18} />
               </Link>
-              <Link href="#how-it-works" className="w-full sm:w-auto px-7 py-3.5 bg-[#0D1017] hover:bg-[#1E2533] text-white font-bold rounded-xl border border-[#1E2533] flex items-center justify-center gap-2 transition-all">
-                View Demo
-              </Link>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-6 text-xs text-slate-500 font-medium">
