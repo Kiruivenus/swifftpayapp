@@ -25,7 +25,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#050816] text-[#F3F4F6] overflow-hidden font-sans selection:bg-[#FF6B00]/30">
       
       {/* Sticky Blurred Navbar */}
-      <nav className="fixed top-0 w-full z-50 bg-[#050816]/75 backdrop-blur-md border-b border-[#1E2533]/40">
+      <nav className="fixed top-0 w-full z-50 bg-[#050816]/90 md:bg-[#050816]/75 backdrop-blur-md border-b border-[#1E2533]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 group cursor-pointer">
             <img src="/logo.png" alt="SwiftPay Logo" className="w-9 h-9 object-contain rounded-xl shadow-lg shadow-[#FF6B00]/10 group-hover:scale-105 transition-transform" />
@@ -42,7 +42,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3 sm:gap-4">
             <Link
               href="/login"
-              className="px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all bg-[#0D1017]/50 hover:bg-[#0D1017] border border-[#1E2533] rounded-xl"
+              className="px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all bg-[#0D1017] border border-[#1E2533] rounded-xl"
             >
               Sign In
             </Link>
@@ -57,10 +57,10 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-24 md:pt-40 md:pb-32 px-4 sm:px-6">
-        {/* Soft Background Orange Glows */}
-        <div className="absolute top-0 left-1/3 -translate-x-1/2 w-full max-w-5xl h-[600px] bg-[#FF6B00]/5 blur-[130px] rounded-full -z-10" />
-        <div className="absolute top-20 right-0 w-80 h-80 bg-orange-600/[0.03] blur-[100px] rounded-full -z-10" />
+      <section className="relative pt-32 pb-24 md:pt-40 md:pb-32 px-4 sm:px-6 overflow-hidden">
+        {/* CSS Radial Gradients instead of costly blur filter hacks */}
+        <div className="absolute top-0 left-1/3 -translate-x-1/2 w-full max-w-5xl h-[600px] bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.06)_0%,transparent_70%)] rounded-full -z-10" />
+        <div className="absolute top-20 right-0 w-80 h-80 bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.03)_0%,transparent_70%)] rounded-full -z-10" />
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           
@@ -97,11 +97,11 @@ export default function LandingPage() {
           {/* Right Side: Fintech Dashboard Preview */}
           <div className="lg:col-span-6 relative flex justify-center">
             
-            {/* Soft Ambient Glow */}
-            <div className="absolute inset-0 bg-[#FF6B00]/5 blur-[80px] -z-10 rounded-full" />
+            {/* Ambient Radial Glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] -z-10 rounded-full" />
             
-            {/* Dashboard Container */}
-            <div className="w-full max-w-[540px] bg-[#0D1017]/85 border border-[#1E2533] rounded-2xl p-5 shadow-2xl relative overflow-hidden backdrop-blur-sm">
+            {/* Dashboard Container (Opaque bg for flat compositing) */}
+            <div className="w-full max-w-[540px] bg-[#0D1017] border border-[#1E2533] rounded-2xl p-5 shadow-2xl relative overflow-hidden backdrop-blur-sm">
               
               {/* Header mockup */}
               <div className="flex items-center justify-between border-b border-[#1E2533]/50 pb-4 mb-4">
@@ -112,7 +112,7 @@ export default function LandingPage() {
                   <span className="text-[10px] text-slate-600 font-bold ml-2 tracking-widest uppercase">SwiftPay Platform</span>
                 </div>
                 <div className="flex items-center gap-2 bg-[#050816] px-2.5 py-1 rounded-lg border border-[#1E2533]/40">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   <span className="text-[10px] text-emerald-400 font-black">LIVE FX MODE</span>
                 </div>
               </div>
@@ -121,8 +121,8 @@ export default function LandingPage() {
                 
                 {/* Balance & Cards Column */}
                 <div className="sm:col-span-7 space-y-4">
-                  {/* Balance Widget */}
-                  <div className="bg-[#050816]/70 border border-[#1E2533]/80 rounded-xl p-4 space-y-2">
+                  {/* Balance Widget (Opaque bg to prevent alpha blends) */}
+                  <div className="bg-[#050816] border border-[#1E2533]/80 rounded-xl p-4 space-y-2">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-wider">Default Balance</p>
                     <div className="flex items-baseline gap-1">
                       <span className="text-xs font-medium text-slate-400">$</span>
@@ -143,7 +143,7 @@ export default function LandingPage() {
 
                   {/* Virtual Card Preview */}
                   <div className="bg-gradient-to-br from-[#FF6B00] via-orange-600 to-rose-600 rounded-xl p-4 h-[135px] flex flex-col justify-between shadow-lg relative overflow-hidden select-none group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,transparent_70%)] pointer-events-none" />
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-[9px] uppercase tracking-widest text-white/70 font-black">SwiftPay Business</p>
@@ -167,8 +167,8 @@ export default function LandingPage() {
                 {/* Conversion Widget Column */}
                 <div className="sm:col-span-5 space-y-4">
                   
-                  {/* Conversion Tool */}
-                  <div className="bg-[#050816]/70 border border-[#1E2533]/80 rounded-xl p-4 flex flex-col justify-between h-full space-y-3">
+                  {/* Conversion Tool (Opaque bg) */}
+                  <div className="bg-[#050816] border border-[#1E2533]/80 rounded-xl p-4 flex flex-col justify-between h-full space-y-3">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-wider">Quick Convert</p>
                     
                     <div className="space-y-1.5">
@@ -178,7 +178,7 @@ export default function LandingPage() {
                       </div>
                       
                       <div className="flex justify-center my-1">
-                        <RefreshCw size={12} className="text-[#FF6B00] animate-spin" />
+                        <RefreshCw size={12} className="text-[#FF6B00]" />
                       </div>
 
                       <div className="bg-[#0D1017] p-2 rounded border border-[#1E2533]/40 flex justify-between items-center">
@@ -197,8 +197,8 @@ export default function LandingPage() {
 
               </div>
 
-              {/* Transactions List */}
-              <div className="mt-4 bg-[#050816]/70 border border-[#1E2533]/80 rounded-xl p-4">
+              {/* Transactions List (Opaque bg) */}
+              <div className="mt-4 bg-[#050816] border border-[#1E2533]/80 rounded-xl p-4">
                 <div className="flex justify-between items-center mb-3">
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-wider">Recent Transactions</p>
                   <span className="text-[9px] text-[#FF6B00] cursor-pointer hover:underline">View All</span>
@@ -235,8 +235,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Live Stats Section */}
-      <section className="border-y border-[#1E2533]/40 bg-[#07090E]/60 py-12 px-4 sm:px-6 relative">
+      {/* Live Stats Section (Solid bg, overflow clipped to restrict glows) */}
+      <section className="border-y border-[#1E2533]/40 bg-[#07090E] py-12 px-4 sm:px-6 overflow-hidden relative">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <StatCard value="$25M+" label="Processed Volume" />
           <StatCard value="100K+" label="Users across Africa" />
@@ -245,8 +245,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 sm:py-32 px-4 sm:px-6 relative">
+      {/* Features Section (Overflow clipped) */}
+      <section id="features" className="py-24 sm:py-32 px-4 sm:px-6 overflow-hidden relative">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-xs uppercase tracking-widest font-black text-[#FF6B00]">Engineered for African Scale</h2>
@@ -291,8 +291,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 bg-[#07090E]/30 relative border-t border-[#1E2533]/40">
+      {/* How It Works Section (Solid background, overflow clipped) */}
+      <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 bg-[#07090E] overflow-hidden relative border-t border-[#1E2533]/40">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-xs uppercase tracking-widest font-black text-[#FF6B00]">Simple Setup Flow</h2>
@@ -324,14 +324,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Product Showcase Section */}
-      <section className="py-24 sm:py-32 px-4 sm:px-6 relative">
+      {/* Product Showcase Section (Overflow clipped) */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 overflow-hidden relative">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           
           {/* Left Column: Phone Mockup */}
           <div className="relative flex justify-center order-2 lg:order-1">
             {/* Glow behind phone */}
-            <div className="absolute inset-0 bg-[#FF6B00]/5 blur-[120px] rounded-full -z-10" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] rounded-full -z-10" />
 
             {/* Apple Device Layout */}
             <div className="w-[305px] h-[610px] bg-[#050816] rounded-[52px] border-[10px] border-[#1E2533] overflow-hidden shadow-2xl relative">
@@ -411,8 +411,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Business Use Cases Section */}
-      <section className="py-24 sm:py-32 px-4 sm:px-6 bg-[#07090E]/30 relative border-t border-[#1E2533]/40">
+      {/* Business Use Cases Section (Solid background, overflow clipped, prevents GPU rendering line corruption) */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 bg-[#07090E] overflow-hidden relative border-t border-[#1E2533]/40">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-xs uppercase tracking-widest font-black text-[#FF6B00]">Custom Built Solutions</h2>
@@ -440,14 +440,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trust & Security Section */}
-      <section id="security" className="py-24 sm:py-32 px-4 sm:px-6 relative">
+      {/* Trust & Security Section (Overflow clipped) */}
+      <section id="security" className="py-24 sm:py-32 px-4 sm:px-6 overflow-hidden relative">
         <div className="max-w-6xl mx-auto">
-          {/* Glass Card */}
-          <div className="bg-gradient-to-br from-[#0D1017] to-[#07090E] border border-[#1E2533] rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-center gap-12">
+          {/* Opaque container card to prevent GPU alpha blending artifacts */}
+          <div className="bg-[#0D1017] border border-[#1E2533] rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden flex flex-col lg:flex-row items-center gap-12">
             
-            {/* Backdrop visual glow */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF6B00]/5 blur-[100px] pointer-events-none rounded-full" />
+            {/* Ambient Radial Glow */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] pointer-events-none rounded-full" />
             
             <div className="flex-1 space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-400">
@@ -478,8 +478,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-24 sm:py-32 px-4 sm:px-6 bg-[#07090E]/30 relative border-y border-[#1E2533]/40">
+      {/* Testimonials Section (Solid background, overflow clipped) */}
+      <section className="py-24 sm:py-32 px-4 sm:px-6 bg-[#07090E] overflow-hidden relative border-y border-[#1E2533]/40">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-xs uppercase tracking-widest font-black text-[#FF6B00]">Verified User Reviews</h2>
@@ -512,13 +512,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Download App Section */}
-      <section id="download" className="py-24 sm:py-32 px-4 sm:px-6 relative">
-        <div className="max-w-5xl mx-auto bg-gradient-to-br from-[#0D1017] to-[#050816] border border-[#1E2533] rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12">
+      {/* Download App Section (Overflow clipped) */}
+      <section id="download" className="py-24 sm:py-32 px-4 sm:px-6 overflow-hidden relative">
+        <div className="max-w-5xl mx-auto bg-[#0D1017] border border-[#1E2533] rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12">
           
-          {/* Orange gradient light */}
-          <div className="absolute inset-0 bg-[#FF6B00]/[0.02] pointer-events-none" />
-
           <div className="space-y-6 flex-1 text-center md:text-left">
             <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               Take your finances anywhere.
@@ -563,8 +560,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer Upgrade */}
-      <footer className="py-20 px-4 sm:px-6 border-t border-[#1E2533]/50 bg-[#050816] relative text-left">
+      {/* Footer (Overflow clipped) */}
+      <footer className="py-20 px-4 sm:px-6 border-t border-[#1E2533]/50 bg-[#050816] overflow-hidden relative text-left">
         <div className="max-w-7xl mx-auto space-y-12">
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
@@ -633,7 +630,7 @@ export default function LandingPage() {
 
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className="p-6 bg-[#0D1017]/10 border border-[#1E2533]/20 rounded-2xl hover:border-[#FF6B00]/20 hover:bg-[#0D1017]/35 transition-all group">
+    <div className="p-6 bg-[#0D1017] border border-[#1E2533]/20 rounded-2xl hover:border-[#FF6B00]/20 hover:bg-[#0D1017]/95 transition-all group">
       <p className="text-2xl sm:text-3xl font-black text-white group-hover:scale-102 transition-transform">{value}</p>
       <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">{label}</p>
     </div>
@@ -642,7 +639,7 @@ function StatCard({ value, label }: { value: string; label: string }) {
 
 function FeatureCard({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <div className="p-8 bg-[#0D1017]/30 border border-[#1E2533] rounded-2xl hover:border-[#FF6B00]/30 transition-all hover:-translate-y-1 duration-300 group text-left">
+    <div className="p-8 bg-[#0D1017] border border-[#1E2533] rounded-2xl hover:border-[#FF6B00]/30 transition-all hover:-translate-y-1 duration-300 group text-left">
       <div className="mb-6 group-hover:scale-105 transition-transform flex items-center justify-center w-12 h-12 rounded-xl bg-[#FF6B00]/10 border border-[#FF6B00]/20">
         {icon}
       </div>
@@ -654,7 +651,7 @@ function FeatureCard({ icon, title, desc }: { icon: React.ReactNode; title: stri
 
 function TimelineStep({ step, title, desc }: { step: string; title: string; desc: string }) {
   return (
-    <div className="space-y-4 p-6 bg-[#0D1017]/40 border border-[#1E2533]/70 rounded-2xl hover:border-[#FF6B00]/20 transition-all text-left relative z-10">
+    <div className="space-y-4 p-6 bg-[#0D1017] border border-[#1E2533]/70 rounded-2xl hover:border-[#FF6B00]/20 transition-all text-left relative z-10">
       <span className="text-[10px] uppercase font-black text-[#FF6B00] bg-[#FF6B00]/10 px-2.5 py-1 rounded-full border border-[#FF6B00]/20">{step}</span>
       <h4 className="text-lg font-bold text-white pt-2">{title}</h4>
       <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">{desc}</p>
@@ -675,7 +672,7 @@ function AppShowcaseFeature({ label }: { label: string }) {
 
 function UseCaseCard({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="p-6 bg-[#0D1017]/30 border border-[#1E2533]/80 rounded-2xl hover:border-[#FF6B00]/20 transition-all text-left flex flex-col justify-between space-y-4">
+    <div className="p-6 bg-[#0D1017] border border-[#1E2533]/80 rounded-2xl hover:border-[#FF6B00]/20 transition-all text-left flex flex-col justify-between space-y-4">
       <div>
         <h4 className="text-base font-bold text-white">{title}</h4>
         <p className="text-slate-400 text-xs mt-2 leading-relaxed">{desc}</p>
@@ -687,7 +684,7 @@ function UseCaseCard({ title, desc }: { title: string; desc: string }) {
 
 function TestimonialCard({ initials, avatarColor, name, title, quote }: { initials: string; avatarColor: string; name: string; title: string; quote: string }) {
   return (
-    <div className="p-8 bg-[#0D1017]/40 border border-[#1E2533] rounded-2xl flex flex-col justify-between text-left space-y-6 hover:border-[#FF6B00]/20 transition-all">
+    <div className="p-8 bg-[#0D1017] border border-[#1E2533] rounded-2xl flex flex-col justify-between text-left space-y-6 hover:border-[#FF6B00]/20 transition-all">
       <div className="flex items-center gap-1.5 text-[#FF6B00]">
         {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
       </div>
