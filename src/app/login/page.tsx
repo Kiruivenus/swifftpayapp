@@ -111,8 +111,8 @@ export default function LoginPage() {
                 <span className="text-lg font-bold tracking-tight text-white">SwiftPay</span>
               </Link>
               
-              <Link href="/" className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-[#0D1017]/80 px-3 py-1.5 rounded-lg border border-[#1E2533]/50">
-                <ArrowLeft size={14} /> Back to Website
+              <Link href="/register" className="flex items-center gap-1.5 text-xs font-bold text-[#FF6B00] hover:text-[#FF7A00] transition-colors bg-[#0D1017]/80 px-3.5 py-1.5 rounded-lg border border-[#1E2533]/50">
+                Register
               </Link>
             </header>
 

@@ -192,17 +192,27 @@ export default function RegisterPage() {
             
             {/* Sticky Header */}
             <header className="fixed top-0 left-0 w-full h-[70px] md:h-[80px] z-50 bg-[#050816]/75 backdrop-blur-md border-b border-[#1E2533]/40 flex items-center justify-between px-6">
-              <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-                <img src="/logo.png" alt="SwiftPay Logo" className="w-8 h-8 object-contain rounded-xl shadow-lg shadow-[#FF6B00]/10 group-hover:scale-105 transition-transform" />
-                <span className="text-lg font-bold tracking-tight text-white">SwiftPay</span>
-              </Link>
+              <div className="flex items-center gap-3">
+                {step === 2 && (
+                  <button 
+                    onClick={handleBack}
+                    className="flex items-center justify-center text-slate-400 hover:text-white transition-colors bg-[#0D1017]/80 w-8 h-8 rounded-lg border border-[#1E2533]/50"
+                    title="Back to Step 1"
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                )}
+                <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+                  <img src="/logo.png" alt="SwiftPay Logo" className="w-8 h-8 object-contain rounded-xl shadow-lg shadow-[#FF6B00]/10 group-hover:scale-105 transition-transform" />
+                  <span className="text-lg font-bold tracking-tight text-white">SwiftPay</span>
+                </Link>
+              </div>
               
-              <button 
-                onClick={step > 1 && step < 3 ? handleBack : () => router.push('/')}
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-[#0D1017]/80 px-3 py-1.5 rounded-lg border border-[#1E2533]/50"
-              >
-                <ArrowLeft size={14} /> {step > 1 && step < 3 ? 'Back' : 'Back to Website'}
-              </button>
+              {step === 1 && (
+                <Link href="/login" className="flex items-center gap-1.5 text-xs font-bold text-[#FF6B00] hover:text-[#FF7A00] transition-colors bg-[#0D1017]/80 px-3.5 py-1.5 rounded-lg border border-[#1E2533]/50">
+                  Login
+                </Link>
+              )}
             </header>
 
             {/* Ambient Background Radial Glow */}
