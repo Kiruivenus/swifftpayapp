@@ -46,9 +46,18 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            // Calculate pending withdrawals for the specific currency
+            // Calculate locked amounts for the specific currency (pending/held/escalated withdrawals + held/escalated received transfers)
             const aggregated = await Transaction.aggregate([
-                { $match: { userId: user.id, type: 'WITHDRAW', currency: currency, status: 'PENDING' } },
+                {
+                    $match: {
+                        userId: user.id,
+                        currency: currency,
+                        $or: [
+                            { type: 'WITHDRAW', status: { $in: ['PENDING', 'HOLD', 'ESCALATED'] } },
+                            { type: 'TRANSFER_RECEIVE', status: { $in: ['HOLD', 'ESCALATED'] } }
+                        ]
+                    }
+                },
                 { $group: { _id: null, total: { $sum: '$amount' } } }
             ]).session(session);
             const pendingAmount = aggregated.length > 0 ? aggregated[0].total : 0;

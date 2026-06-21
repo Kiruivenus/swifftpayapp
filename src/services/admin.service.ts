@@ -209,6 +209,13 @@ class AdminService {
         });
     }
 
+    async submitTransactionAction(id: string, action: 'HOLD' | 'REVERSE' | 'RESOLVE_FAVOR_RECEIVER', reason: string) {
+        return this.fetchJson(`/api/admin/transactions/${id}/action`, {
+            method: 'POST',
+            body: JSON.stringify({ action, reason }),
+        });
+    }
+
     async getFinanceMetrics(params: { range?: string; from?: string; to?: string } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/finance/metrics?${query}`);

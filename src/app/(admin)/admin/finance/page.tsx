@@ -65,11 +65,12 @@ export default function RedesignedFinancePage() {
     const [showRateModal, setShowRateModal] = useState(false);
     const [confirmModal, setConfirmModal] = useState<{
         show: boolean;
-        action: 'APPROVE' | 'REJECT' | 'HOLD' | 'ESCALATE' | 'REVERSE';
+        action: 'APPROVE' | 'REJECT' | 'HOLD' | 'ESCALATE' | 'REVERSE' | 'RESOLVE_FAVOR_RECEIVER';
         txId: string;
         userName: string;
         amount: string;
         currency: string;
+        type?: string;
     } | null>(null);
 
     // Form inputs
@@ -137,14 +138,15 @@ export default function RedesignedFinancePage() {
     }, [fetchLedger]);
 
     // Handlers
-    const triggerConfirmModal = (action: 'APPROVE' | 'REJECT' | 'HOLD' | 'ESCALATE' | 'REVERSE', tx: any) => {
+    const triggerConfirmModal = (action: 'APPROVE' | 'REJECT' | 'HOLD' | 'ESCALATE' | 'REVERSE' | 'RESOLVE_FAVOR_RECEIVER', tx: any) => {
         setConfirmModal({
             show: true,
             action,
             txId: tx._id,
             userName: tx.userId?.username || 'System',
             amount: tx.amount.toLocaleString(),
-            currency: tx.currency
+            currency: tx.currency,
+            type: tx.type
         });
         setActionReason('');
     };
@@ -153,14 +155,19 @@ export default function RedesignedFinancePage() {
         if (!confirmModal) return;
         const { action, txId } = confirmModal;
 
-        if (['REJECT', 'HOLD', 'ESCALATE', 'REVERSE'].includes(action) && !actionReason.trim()) {
+        if (['REJECT', 'HOLD', 'ESCALATE', 'REVERSE', 'RESOLVE_FAVOR_RECEIVER'].includes(action) && !actionReason.trim()) {
             alert('A reason is required to process this operation.');
             return;
         }
 
         try {
             setProcessingId(txId);
-            const res = await adminService.submitWithdrawalAction(txId, action, { reason: actionReason });
+            let res;
+            if (selectedTx && (selectedTx.type === 'TRANSFER_SEND' || selectedTx.type === 'TRANSFER_RECEIVE')) {
+                res = await adminService.submitTransactionAction(txId, action as any, actionReason);
+            } else {
+                res = await adminService.submitWithdrawalAction(txId, action as any, { reason: actionReason });
+            }
             alert(res.message || 'Operation successful');
             
             // Clean state & reload
@@ -868,6 +875,36 @@ export default function RedesignedFinancePage() {
                                     >
                                         Reverse transaction
                                     </button>
+                                ) : (selectedTx.type === 'TRANSFER_SEND' || selectedTx.type === 'TRANSFER_RECEIVE') && selectedTx.status === 'SUCCESS' ? (
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => triggerConfirmModal('HOLD', selectedTx)}
+                                            className="px-5 py-2.5 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 text-[#FF6B00] border border-[#FF6B00]/20 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                                        >
+                                            Place on hold
+                                        </button>
+                                        <button 
+                                            onClick={() => triggerConfirmModal('REVERSE', selectedTx)}
+                                            className="px-5 py-2.5 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                                        >
+                                            Reverse transfer
+                                        </button>
+                                    </div>
+                                ) : (selectedTx.type === 'TRANSFER_SEND' || selectedTx.type === 'TRANSFER_RECEIVE') && selectedTx.status === 'HOLD' ? (
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => triggerConfirmModal('RESOLVE_FAVOR_RECEIVER', selectedTx)}
+                                            className="px-5 py-2.5 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                                        >
+                                            Favour Receiver
+                                        </button>
+                                        <button 
+                                            onClick={() => triggerConfirmModal('REVERSE', selectedTx)}
+                                            className="px-5 py-2.5 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                                        >
+                                            Reverse transfer
+                                        </button>
+                                    </div>
                                 ) : (
                                     <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">No action required</span>
                                 )}
@@ -897,7 +934,7 @@ export default function RedesignedFinancePage() {
                         
                         <div className="p-6 space-y-4">
                             <p className="text-xs text-slate-400 font-medium">
-                                You are requesting to trigger action <span className="font-black text-[#FF6B00]">{confirmModal.action}</span> for user <span className="font-bold text-white">@{confirmModal.userName}</span> withdrawal payout:
+                                You are requesting to trigger action <span className="font-black text-[#FF6B00]">{confirmModal.action.replace(/_/g, ' ')}</span> for user <span className="font-bold text-white">@{confirmModal.userName}</span> {confirmModal.type?.includes('TRANSFER') ? 'P2P transfer:' : 'withdrawal payout:'}
                             </p>
 
                             <div className="p-4 bg-[#07090E] rounded-2xl border border-white/[0.02] font-mono text-center space-y-1">
@@ -906,7 +943,7 @@ export default function RedesignedFinancePage() {
                             </div>
 
                             {/* Prompt for reason */}
-                            {['REJECT', 'HOLD', 'ESCALATE', 'REVERSE'].includes(confirmModal.action) && (
+                            {['REJECT', 'HOLD', 'ESCALATE', 'REVERSE', 'RESOLVE_FAVOR_RECEIVER'].includes(confirmModal.action) && (
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Operation Reason (Required)</label>
                                     <textarea 
