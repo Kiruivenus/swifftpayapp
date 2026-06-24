@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
             const authHeader = `Basic ${Buffer.from(PALPLUSS_API_KEY + ':').toString('base64')}`;
             const callbackUrl = `${req.nextUrl.origin}/api/webhooks/palpluss`;
 
-            const palplussResponse = await fetch('https://api.palpluss.com/v1/b2c', {
+            const palplussResponse = await fetch('https://api.palpluss.com/v1/b2c/payouts', {
                 method: 'POST',
                 headers: {
                     'Authorization': authHeader,
@@ -276,8 +276,9 @@ export async function POST(req: NextRequest) {
                 dbUser.kesBalance = dbUser.kesBalance + amount;
                 await dbUser.save();
 
+                const errorMessage = responseData.error?.message || responseData.message || 'Palpluss API connection failed';
                 transaction.status = 'FAILED';
-                transaction.rejectionReason = responseData.message || 'Palpluss API connection failed';
+                transaction.rejectionReason = errorMessage;
                 await transaction.save();
 
                 // Log admin/security event
@@ -290,12 +291,13 @@ export async function POST(req: NextRequest) {
 
                 return NextResponse.json({
                     success: false,
-                    message: responseData.message || 'Disbursement provider failed to initiate transaction.'
+                    message: errorMessage
                 }, { status: 400 });
             }
 
             // Successfully queued with Palpluss B2C Payout
-            transaction.providerReference = responseData.transaction?.id || responseData.id || '';
+            const providerRefId = responseData.data?.transactionId || responseData.data?.id || responseData.transaction?.id || responseData.id || '';
+            transaction.providerReference = providerRefId;
             transaction.metadata = {
                 ...transaction.metadata,
                 palplussResponse: responseData
