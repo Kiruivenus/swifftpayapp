@@ -15,7 +15,6 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     User,
-    DevicePhoneMobile,
     Cpu,
     Calendar,
     Wallet,
@@ -62,6 +61,11 @@ export default function AdminDisputesPage() {
     } | null>(null);
     const [actionReason, setActionReason] = useState('');
     const [processingAction, setProcessingAction] = useState(false);
+    const [blockConfirmModal, setBlockConfirmModal] = useState<{
+        show: boolean;
+        userId: string;
+        username: string;
+    } | null>(null);
 
     // Fetch the filterable transaction list
     const fetchDisputesList = useCallback(async () => {
@@ -162,6 +166,32 @@ export default function AdminDisputesPage() {
             fetchDisputesList();
         } catch (err: any) {
             alert(err.message || 'Operation failed.');
+        } finally {
+            setProcessingAction(false);
+        }
+    };
+
+    const handleBlockUser = async () => {
+        if (!blockConfirmModal) return;
+        const { userId } = blockConfirmModal;
+
+        try {
+            setProcessingAction(true);
+            // 1. Mark status as BLOCKED via admin user update API
+            await adminService.updateUser(userId, { status: 'BLOCKED' });
+            
+            // 2. Force logout user sessions to revoke active tokens immediately
+            await adminService.forceUserLogout(userId).catch(() => null);
+            
+            alert('The user account has been successfully BLOCKED and all sessions revoked.');
+            setBlockConfirmModal(null);
+            
+            // Reload transaction profiles
+            if (selectedTx) {
+                handleSelectDispute(selectedTx);
+            }
+        } catch (err: any) {
+            alert(err.message || 'Failed to complete user block action.');
         } finally {
             setProcessingAction(false);
         }
@@ -377,6 +407,108 @@ export default function AdminDisputesPage() {
                                     </div>
                                 </div>
 
+                                {/* Scam Heuristics & Risk Analysis Panel */}
+                                {(() => {
+                                    const senderRiskScore = senderIntel?.securitySummary?.riskScore || 0;
+                                    const recipientRiskScore = recipientIntel?.securitySummary?.riskScore || 0;
+                                    const hasWarnings = 
+                                        (recipientIntel?.accountAgeDays !== undefined && recipientIntel.accountAgeDays < 15) ||
+                                        (recipientIntel?.scamReportsReceivedCount !== undefined && recipientIntel.scamReportsReceivedCount > 0) ||
+                                        (recipientIntel?.averageTransferSizeKES !== undefined && recipientIntel.averageTransferSizeKES > 0 && selectedTx.currency === 'KES' && selectedTx.amount > recipientIntel.averageTransferSizeKES * 5) ||
+                                        (senderIntel?.reportedScamsCount !== undefined && senderIntel.reportedScamsCount > 5) ||
+                                        ((senderIntel?.deviceMismatches || 0) > 0 || (recipientIntel?.deviceMismatches || 0) > 0);
+
+                                    return (
+                                        <div className="space-y-2">
+                                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                <ShieldAlert size={12} className="text-[#FF6B00]" />
+                                                Scam Heuristics & Risk Analysis
+                                            </h4>
+                                            <div className="p-3.5 bg-[#07090E] border border-[#1E2533] rounded-2xl space-y-3 text-xs">
+                                                {/* Risk Scores Grid */}
+                                                <div className="grid grid-cols-2 gap-2 text-center">
+                                                    <div className="p-2.5 bg-white/[0.01] border border-[#1E2533] rounded-xl">
+                                                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Sender Risk</span>
+                                                        <span className={`text-base font-black block mt-1 ${
+                                                            senderRiskScore > 75 ? 'text-rose-500' :
+                                                            senderRiskScore > 45 ? 'text-orange-500' :
+                                                            senderRiskScore > 25 ? 'text-amber-500' :
+                                                            'text-emerald-500'
+                                                        }`}>{senderRiskScore}/100</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 capitalize">
+                                                            {senderRiskScore > 75 ? 'Critical' :
+                                                             senderRiskScore > 45 ? 'High' :
+                                                             senderRiskScore > 25 ? 'Medium' :
+                                                             'Low'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="p-2.5 bg-white/[0.01] border border-[#1E2533] rounded-xl">
+                                                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Recipient Risk</span>
+                                                        <span className={`text-base font-black block mt-1 ${
+                                                            recipientRiskScore > 75 ? 'text-rose-500' :
+                                                            recipientRiskScore > 45 ? 'text-orange-500' :
+                                                            recipientRiskScore > 25 ? 'text-amber-500' :
+                                                            'text-emerald-500'
+                                                        }`}>{recipientRiskScore}/100</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 capitalize">
+                                                            {recipientRiskScore > 75 ? 'Critical' :
+                                                             recipientRiskScore > 45 ? 'High' :
+                                                             recipientRiskScore > 25 ? 'Medium' :
+                                                             'Low'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Dynamic Alerts List */}
+                                                {hasWarnings ? (
+                                                    <div className="pt-2 border-t border-white/[0.03] space-y-2 text-left">
+                                                        <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest block">Active Risk Flags:</span>
+                                                        
+                                                        {recipientIntel?.accountAgeDays !== undefined && recipientIntel.accountAgeDays < 15 && (
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-400 font-medium">
+                                                                <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+                                                                <span>New Recipient: Account active only {recipientIntel.accountAgeDays} days. High money mule risk.</span>
+                                                            </div>
+                                                        )}
+
+                                                        {recipientIntel?.scamReportsReceivedCount !== undefined && recipientIntel.scamReportsReceivedCount > 0 && (
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-rose-400 font-bold">
+                                                                <ShieldAlert size={12} className="mt-0.5 shrink-0" />
+                                                                <span>Serial Defendant: {recipientIntel.scamReportsReceivedCount} active scam disputes filed against them.</span>
+                                                            </div>
+                                                        )}
+
+                                                        {recipientIntel?.averageTransferSizeKES !== undefined && recipientIntel.averageTransferSizeKES > 0 && selectedTx.currency === 'KES' && selectedTx.amount > recipientIntel.averageTransferSizeKES * 5 && (
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-amber-400 font-medium">
+                                                                <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+                                                                <span>Anomalous Value: Transfer size is 5x larger than recipient's average transfer size ({Math.round(recipientIntel.averageTransferSizeKES).toLocaleString()} KES).</span>
+                                                            </div>
+                                                        )}
+
+                                                        {senderIntel?.reportedScamsCount !== undefined && senderIntel.reportedScamsCount > 5 && (
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-purple-400 font-medium">
+                                                                <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+                                                                <span>Dispute Abuse: Sender has filed {senderIntel.reportedScamsCount} disputes. Check for first-party fraud.</span>
+                                                            </div>
+                                                        )}
+
+                                                        {((senderIntel?.deviceMismatches || 0) > 0 || (recipientIntel?.deviceMismatches || 0) > 0) && (
+                                                            <div className="flex items-start gap-1.5 text-[10px] text-orange-400 font-medium">
+                                                                <Cpu size={12} className="mt-0.5 shrink-0" />
+                                                                <span>Session Mismatch: Multiple active or untrusted device sessions detected.</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="pt-2 border-t border-white/[0.03] text-center text-slate-500 text-[9px] font-bold uppercase tracking-wider py-1">
+                                                        No high-confidence risk flags triggered
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Sender Profile */}
                                 <div className="space-y-2">
                                     <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sender Profile (Plaintiff)</h4>
@@ -400,8 +532,12 @@ export default function AdminDisputesPage() {
                                                     <span className="font-bold text-slate-300">KES {Math.round(senderIntel.totalTransferVolumeKES || 0).toLocaleString()}</span>
                                                 </div>
                                                 <div>
-                                                    <span className="text-slate-500 block">Dispute Ratio</span>
+                                                    <span className="text-slate-500 block">Disputes Filed</span>
                                                     <span className="font-bold text-slate-300">{senderIntel.reportedScamsCount || 0} disputes</span>
+                                                </div>
+                                                <div className="col-span-2 mt-1 pt-1 border-t border-white/[0.01] flex justify-between text-[9px] text-slate-500 font-mono">
+                                                    <span>Account Age: {senderIntel.accountAgeDays || 0} days</span>
+                                                    <span>24h Velocity: {senderIntel.recentVelocity24h || 0} txs</span>
                                                 </div>
                                             </div>
                                         )}
@@ -434,8 +570,32 @@ export default function AdminDisputesPage() {
                                                     <span className="text-slate-500 block">Avg. Transfer Size</span>
                                                     <span className="font-bold text-slate-300">KES {Math.round(recipientIntel.averageTransferSizeKES || 0).toLocaleString()}</span>
                                                 </div>
+                                                <div className="col-span-2 mt-1 pt-1 border-t border-white/[0.01] flex justify-between text-[9px] text-slate-500 font-mono">
+                                                    <span>Account Age: {recipientIntel.accountAgeDays || 0} days</span>
+                                                    <span>Disputes Against: {recipientIntel.scamReportsReceivedCount || 0}</span>
+                                                </div>
                                             </div>
                                         )}
+
+                                        {/* Block Action Button */}
+                                        {recipientProfile && recipientProfile.status !== 'BLOCKED' ? (
+                                            <button
+                                                onClick={() => setBlockConfirmModal({
+                                                    show: true,
+                                                    userId: recipientProfile._id || recipientProfile.id,
+                                                    username: recipientProfile.username || 'Unknown'
+                                                })}
+                                                className="w-full mt-2.5 py-2 bg-rose-955/20 hover:bg-rose-900/40 border border-rose-500/20 hover:border-rose-500/50 text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+                                            >
+                                                <XCircle size={12} />
+                                                Block Recipient Account
+                                            </button>
+                                        ) : recipientProfile && recipientProfile.status === 'BLOCKED' ? (
+                                            <div className="w-full mt-2.5 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-center text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-1.5">
+                                                <XCircle size={12} />
+                                                Recipient Account Blocked
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
 
@@ -529,6 +689,45 @@ export default function AdminDisputesPage() {
                                     <Loader2 className="animate-spin" size={12} />
                                 ) : (
                                     'Submit Decision'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Block User Confirmation Modal Overlay */}
+            {blockConfirmModal && (
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#0B1020] border border-[#1A233A] rounded-3xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+                        <div className="text-left">
+                            <h3 className="text-lg font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <AlertTriangle className="text-rose-500" size={20} />
+                                Confirm Permanent Block
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                                You are about to block user account <span className="font-mono text-white font-bold">{blockConfirmModal.username}</span>.
+                                This will restrict them from depositing, withdrawing, or transferring any funds, and terminate all active login sessions immediately.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 justify-end pt-2">
+                            <button
+                                onClick={() => setBlockConfirmModal(null)}
+                                className="px-4 py-2 bg-transparent hover:bg-white/5 border border-white/10 text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
+                                disabled={processingAction}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBlockUser}
+                                className="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5"
+                                disabled={processingAction}
+                            >
+                                {processingAction ? (
+                                    <Loader2 className="animate-spin" size={12} />
+                                ) : (
+                                    'Block User'
                                 )}
                             </button>
                         </div>
