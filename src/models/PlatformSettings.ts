@@ -37,6 +37,12 @@ const PlatformSettingsSchema = new Schema({
     mpesaEnvironment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
     callbackBaseUrl: { type: String, default: '' },
 
+    // Palpluss B2C Payout Integration (Encrypted)
+    palplussApiKey: { type: String, default: '' },
+    palplussWebhookSecret: { type: String, default: '' },
+    palplussEnvironment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
+
+
     preferredEmailProvider: { type: String, enum: ['smtp', 'resend', 'sendgrid', 'mailgun', 'ses'], default: 'smtp' },
     sendgridApiKey: { type: String, default: '' },
     resendApiKey: { type: String, default: '' },

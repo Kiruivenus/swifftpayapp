@@ -62,6 +62,15 @@ const TransactionSchema = new Schema({
         index: true,
     },
     flagReason: String,
+    providerReference: {
+        type: String,
+        default: '',
+        index: true
+    },
+    metadata: {
+        type: Schema.Types.Mixed,
+        default: {}
+    }
 });
 
 const Transaction = models.Transaction || model('Transaction', TransactionSchema);

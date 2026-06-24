@@ -122,6 +122,8 @@ export async function GET(req: NextRequest) {
             sesAccessKeyId: maskSecret(settings.sesAccessKeyId),
             sesSecretAccessKey: maskSecret(settings.sesSecretAccessKey),
             smtpPass: maskSecret(settings.smtpPass),
+            palplussApiKey: maskSecret(settings.palplussApiKey),
+            palplussWebhookSecret: maskSecret(settings.palplussWebhookSecret),
 
             canEditSecrets: isSuperAdmin,
             canEditBrandAssets: isSuperAdmin

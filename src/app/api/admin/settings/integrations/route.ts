@@ -21,7 +21,8 @@ export async function PUT(req: NextRequest) {
             mpesaConsumerKey, mpesaConsumerSecret, mpesaPasskey, mpesaShortCode, mpesaEnvironment,
             sendgridApiKey, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
             preferredEmailProvider,
-            resendApiKey, mailgunApiKey, mailgunDomain, sesAccessKeyId, sesSecretAccessKey, sesRegion
+            resendApiKey, mailgunApiKey, mailgunDomain, sesAccessKeyId, sesSecretAccessKey, sesRegion,
+            palplussApiKey, palplussWebhookSecret, palplussEnvironment
         } = body;
 
         await dbConnect();
@@ -44,6 +45,17 @@ export async function PUT(req: NextRequest) {
         }
         if (mpesaShortCode !== undefined) settings.mpesaShortCode = mpesaShortCode;
         if (mpesaEnvironment !== undefined) settings.mpesaEnvironment = mpesaEnvironment;
+
+        if (palplussApiKey) {
+            settings.palplussApiKey = encrypt(palplussApiKey);
+            changes.palplussApiKey = 'UPDATED';
+        }
+        if (palplussWebhookSecret) {
+            settings.palplussWebhookSecret = encrypt(palplussWebhookSecret);
+            changes.palplussWebhookSecret = 'UPDATED';
+        }
+        if (palplussEnvironment !== undefined) settings.palplussEnvironment = palplussEnvironment;
+
 
         if (sendgridApiKey) {
             settings.sendgridApiKey = encrypt(sendgridApiKey);

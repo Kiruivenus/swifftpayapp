@@ -102,6 +102,12 @@ export default function SettingsPage() {
     const [sesAccessKeyId, setSesAccessKeyId] = useState('');
     const [sesSecretAccessKey, setSesSecretAccessKey] = useState('');
     const [sesRegion, setSesRegion] = useState('us-east-1');
+
+    // Palpluss Integration States
+    const [palplussApiKey, setPalplussApiKey] = useState('');
+    const [palplussWebhookSecret, setPalplussWebhookSecret] = useState('');
+    const [palplussEnvironment, setPalplussEnvironment] = useState<'sandbox' | 'production'>('sandbox');
+
     
     // Testing email recipient
     const [testEmailRecipient, setTestEmailRecipient] = useState('');
@@ -196,6 +202,11 @@ export default function SettingsPage() {
                 setSesAccessKeyId(s.sesAccessKeyId || '');
                 setSesSecretAccessKey(s.sesSecretAccessKey || '');
                 setSesRegion(s.sesRegion || 'us-east-1');
+
+                setPalplussApiKey(s.palplussApiKey || '');
+                setPalplussWebhookSecret(s.palplussWebhookSecret || '');
+                setPalplussEnvironment(s.palplussEnvironment || 'sandbox');
+
 
                 if (s.gatewaysEnabled) {
                     setGatewayToggles({
@@ -314,9 +325,12 @@ export default function SettingsPage() {
                 mailgunDomain,
                 sesAccessKeyId: sesAccessKeyId && !sesAccessKeyId.startsWith('•') ? sesAccessKeyId : undefined,
                 sesSecretAccessKey: sesSecretAccessKey && !sesSecretAccessKey.startsWith('•') ? sesSecretAccessKey : undefined,
-                sesRegion
+                sesRegion,
+                palplussApiKey: palplussApiKey && !palplussApiKey.startsWith('•') ? palplussApiKey : undefined,
+                palplussWebhookSecret: palplussWebhookSecret && !palplussWebhookSecret.startsWith('•') ? palplussWebhookSecret : undefined,
+                palplussEnvironment
             });
-            triggerAlert('success', 'Email routing credentials saved securely.');
+            triggerAlert('success', 'Email routing and Palpluss payout keys saved securely.');
             await fetchData(true);
         } catch (err: any) {
             triggerAlert('error', 'Failed to update email integration keys: ' + err.message);
@@ -595,7 +609,7 @@ export default function SettingsPage() {
                     { id: 'general', label: 'General & Branding', icon: <Sliders size={16} /> },
                     { id: 'gateways', label: 'Payment Gateways', icon: <Globe2 size={16} /> },
                     { id: 'security', label: 'Security Controls', icon: <Shield size={16} /> },
-                    { id: 'email', label: 'Email Configuration', icon: <Mail size={16} /> },
+                    { id: 'email', label: 'Email & Integrations', icon: <Mail size={16} /> },
                     { id: 'apikeys', label: 'Developer API Keys', icon: <Key size={16} /> },
                     { id: 'backups', label: 'Backup & Restore', icon: <Database size={16} /> },
                     { id: 'audit', label: 'Settings Audit logs', icon: <History size={16} /> }
@@ -1332,6 +1346,35 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Palpluss B2C Payout Integration settings */}
+                                    <div className="pt-6 border-t border-white/5 space-y-4">
+                                        <h3 className="text-xs font-black uppercase text-white tracking-widest flex items-center gap-2 pb-2 border-b border-white/5">
+                                            <Server className="text-primary-orange" size={16} />
+                                            Palpluss B2C Payout Integration
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-0.5">Palpluss API Key</label>
+                                                <input type="password" value={palplussApiKey} onChange={(e) => setPalplussApiKey(e.target.value)} placeholder="pk_••••••••••••" className="w-full px-4 py-2.5 bg-[#050816] border border-[#1E2533] rounded-xl text-xs font-mono text-white focus:outline-none" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-0.5">Webhook Signing Secret</label>
+                                                <input type="password" value={palplussWebhookSecret} onChange={(e) => setPalplussWebhookSecret(e.target.value)} placeholder="whsec_••••••••••••" className="w-full px-4 py-2.5 bg-[#050816] border border-[#1E2533] rounded-xl text-xs font-mono text-white focus:outline-none" />
+                                            </div>
+                                            <div className="space-y-2 md:col-span-2">
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-0.5">Palpluss Environment</label>
+                                                <select
+                                                    value={palplussEnvironment}
+                                                    onChange={(e) => setPalplussEnvironment(e.target.value as any)}
+                                                    className="w-full px-4 py-3 bg-[#050816] border border-[#1E2533] rounded-xl text-xs text-slate-200 focus:outline-none focus:border-primary-orange font-bold uppercase"
+                                                >
+                                                    <option value="sandbox">Sandbox Environment</option>
+                                                    <option value="production">Production Gateway</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
