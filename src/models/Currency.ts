@@ -31,6 +31,14 @@ const CurrencySchema = new Schema({
         minLimit: { type: Number, default: 0 },
         maxLimit: { type: Number, default: 1000000 },
         autoSync: { type: Boolean, default: true },
+    },
+    iconUrl: {
+        type: String,
+        default: '',
+    },
+    isCrypto: {
+        type: Boolean,
+        default: false,
     }
 }, {
     collection: 'currencies',

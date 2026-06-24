@@ -18,6 +18,11 @@ const WalletSchema = new Schema({
         default: 0,
         min: 0,
     },
+    balances: {
+        type: Map,
+        of: Number,
+        default: {},
+    },
     lockedKES: {
         type: Number,
         default: 0,

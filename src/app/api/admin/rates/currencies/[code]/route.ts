@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Currency from '@/models/Currency';
+import ExchangeLimit from '@/models/ExchangeLimit';
 import RateHistory from '@/models/RateHistory';
 import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS } from '@/lib/rbac';
@@ -31,6 +32,8 @@ export async function PUT(
         if (body.symbol !== undefined) currency.symbol = body.symbol;
         if (body.precision !== undefined) currency.precision = body.precision;
         if (body.enabled !== undefined) currency.enabled = body.enabled;
+        if (body.iconUrl !== undefined) currency.iconUrl = body.iconUrl;
+        if (body.isCrypto !== undefined) currency.isCrypto = body.isCrypto;
         
         if (body.isDefault === true) {
             // Unset other defaults
@@ -45,6 +48,17 @@ export async function PUT(
                 ...currency.conversionRules,
                 ...body.conversionRules
             };
+
+            // Sync with ExchangeLimit
+            await ExchangeLimit.findOneAndUpdate(
+                { currency: code.toUpperCase() },
+                {
+                    minLimit: body.conversionRules.minLimit !== undefined ? body.conversionRules.minLimit : (currency.conversionRules?.minLimit || 1),
+                    maxLimit: body.conversionRules.maxLimit !== undefined ? body.conversionRules.maxLimit : (currency.conversionRules?.maxLimit || 1000000),
+                    dailyLimit: body.conversionRules.dailyLimit !== undefined ? body.conversionRules.dailyLimit : 5000000
+                },
+                { upsert: true }
+            );
         }
 
         await currency.save();

@@ -17,11 +17,33 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ message: 'User not found' }, { status: 404 });
         }
 
-        if (!dbUser.usdtAddress) {
-            // Generate a mock TRC20 address if none exists
-            const mockAddress = 'T' + Array.from({ length: 33 }, () => Math.random().toString(36).charAt(2)).join('');
-            dbUser.usdtAddress = mockAddress;
-            await dbUser.save();
+        let UsdtDepositAddress;
+        try {
+            UsdtDepositAddress = (await import('@/models/UsdtDepositAddress')).default;
+        } catch (e) {
+            console.error('Failed to import UsdtDepositAddress model', e);
+        }
+
+        let isAddressValid = false;
+        if (dbUser.usdtAddress && UsdtDepositAddress) {
+            const poolAddress = await UsdtDepositAddress.findOne({ address: dbUser.usdtAddress, isActive: true });
+            if (poolAddress) {
+                isAddressValid = true;
+            }
+        }
+
+        if (!isAddressValid) {
+            const pool = UsdtDepositAddress ? await UsdtDepositAddress.find({ isActive: true }) : [];
+            if (pool.length > 0) {
+                const randomIndex = Math.floor(Math.random() * pool.length);
+                dbUser.usdtAddress = pool[randomIndex].address;
+                await dbUser.save();
+            } else if (!dbUser.usdtAddress) {
+                // Generate a mock TRC20 address if pool is empty and user has none
+                const mockAddress = 'T' + Array.from({ length: 33 }, () => Math.random().toString(36).charAt(2)).join('');
+                dbUser.usdtAddress = mockAddress;
+                await dbUser.save();
+            }
         }
 
         return NextResponse.json({ address: dbUser.usdtAddress });

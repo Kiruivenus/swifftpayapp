@@ -1304,13 +1304,15 @@ function AddCurrencyModal({ onClose, onSuccess }: any) {
     const [name, setName] = useState('');
     const [symbol, setSymbol] = useState('');
     const [precision, setPrecision] = useState(2);
+    const [iconUrl, setIconUrl] = useState('');
+    const [isCrypto, setIsCrypto] = useState(false);
     const [saving, setSaving] = useState(false);
 
     const handleSubmit = async () => {
         if (!code || !name || !symbol) return alert("All fields are required.");
         try {
             setSaving(true);
-            await adminService.addCurrency({ code, name, symbol, precision });
+            await adminService.addCurrency({ code, name, symbol, precision, iconUrl, isCrypto });
             onSuccess();
         } catch (err: any) {
             alert(err.message);
@@ -1338,6 +1340,10 @@ function AddCurrencyModal({ onClose, onSuccess }: any) {
                         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Full Currency Name</label>
                         <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#07090E] border border-[#1E2533] rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-primary-orange" placeholder="Euro" />
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Icon URL (SVG / Country Flag)</label>
+                        <input value={iconUrl} onChange={e => setIconUrl(e.target.value)} className="w-full bg-[#07090E] border border-[#1E2533] rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-primary-orange" placeholder="e.g. https://flagcdn.com/eu.svg" />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Symbol</label>
@@ -1347,6 +1353,10 @@ function AddCurrencyModal({ onClose, onSuccess }: any) {
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Display Precision</label>
                             <input type="number" value={precision} onChange={e => setPrecision(parseInt(e.target.value) || 2)} className="w-full bg-[#07090E] border border-[#1E2533] rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-primary-orange font-mono" placeholder="2" />
                         </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                        <span className="text-[10px] font-black text-slate-500 uppercase">Is Crypto Asset:</span>
+                        <input type="checkbox" checked={isCrypto} onChange={e => setIsCrypto(e.target.checked)} className="accent-primary-orange cursor-pointer" />
                     </div>
                 </div>
 
@@ -1371,6 +1381,8 @@ function EditCurrencyModal({ currency, onClose, onSuccess }: any) {
     const [name, setName] = useState(currency.name || '');
     const [symbol, setSymbol] = useState(currency.symbol || '');
     const [precision, setPrecision] = useState(currency.precision || 2);
+    const [iconUrl, setIconUrl] = useState(currency.iconUrl || '');
+    const [isCrypto, setIsCrypto] = useState(currency.isCrypto || false);
     const [enabled, setEnabled] = useState(currency.enabled);
     const [isDefault, setIsDefault] = useState(currency.isDefault || false);
     const [minLimit, setMinLimit] = useState(currency.conversionRules?.minLimit || 0);
@@ -1388,6 +1400,10 @@ function EditCurrencyModal({ currency, onClose, onSuccess }: any) {
                     <div className="space-y-2">
                         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Name</label>
                         <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-[#07090E] border border-[#1E2533] rounded-xl px-4 py-2 text-xs text-white" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-1">Icon URL</label>
+                        <input value={iconUrl} onChange={e => setIconUrl(e.target.value)} className="w-full bg-[#07090E] border border-[#1E2533] rounded-xl px-4 py-2 text-xs text-white" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -1411,6 +1427,10 @@ function EditCurrencyModal({ currency, onClose, onSuccess }: any) {
                     </div>
                     
                     <div className="flex justify-between items-center pt-2">
+                        <span className="text-[10px] font-black text-slate-500 uppercase">Is Crypto Asset:</span>
+                        <input type="checkbox" checked={isCrypto} onChange={e => setIsCrypto(e.target.checked)} className="accent-primary-orange cursor-pointer" />
+                    </div>
+                    <div className="flex justify-between items-center">
                         <span className="text-[10px] font-black text-slate-500 uppercase">Enable Auto Sync:</span>
                         <input type="checkbox" checked={autoSync} onChange={e => setAutoSync(e.target.checked)} className="accent-primary-orange cursor-pointer" />
                     </div>
@@ -1427,7 +1447,7 @@ function EditCurrencyModal({ currency, onClose, onSuccess }: any) {
                 <div className="flex gap-3 pt-4">
                     <button onClick={onClose} className="flex-1 py-3 text-slate-500 font-bold text-xs uppercase hover:text-white transition-colors">Cancel</button>
                     <button
-                        onClick={() => onSuccess({ name, symbol, precision, enabled, isDefault, conversionRules: { minLimit, maxLimit, autoSync } })}
+                        onClick={() => onSuccess({ name, symbol, precision, enabled, isDefault, iconUrl, isCrypto, conversionRules: { minLimit, maxLimit, autoSync } })}
                         className="flex-3 px-8 py-3 bg-primary-orange text-white font-black text-xs rounded-xl shadow-lg uppercase tracking-widest"
                     >
                         Save Configuration

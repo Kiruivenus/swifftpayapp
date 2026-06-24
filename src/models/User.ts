@@ -18,6 +18,11 @@ const UserSchema = new Schema({
         type: Number,
         default: 0,
     },
+    balances: {
+        type: Map,
+        of: Number,
+        default: {},
+    },
     role: {
         type: String,
         enum: ['user', 'super_admin', 'admin', 'finance', 'kyc_reviewer', 'support'],

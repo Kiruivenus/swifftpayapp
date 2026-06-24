@@ -73,6 +73,7 @@ export async function GET(req: NextRequest) {
                 fee: tx.fee,
                 netAmount: tx.netAmount,
                 phoneNumber: tx.phoneNumber,
+                mpesaReceiptNumber: tx.mpesaReceiptNumber,
                 description: tx.mpesaReceiptNumber ? `M-Pesa Receipt: ${tx.mpesaReceiptNumber}` : (tx.flagReason || "")
             };
         });

@@ -77,7 +77,14 @@ export async function POST(req: NextRequest) {
             if (recipient_type === 'EMAIL') {
                 recipientUser = await User.findOne({ emailNormalized: cleanRecipient }).session(session);
             } else {
-                recipientUser = await User.findById(recipient).session(session);
+                // If it is not a valid 24-character hexadecimal ObjectId, try to query by usernameNormalized
+                if (!mongoose.Types.ObjectId.isValid(cleanRecipient)) {
+                    // Try by username. Strip leading '@' if present
+                    const cleanUsername = cleanRecipient.startsWith('@') ? cleanRecipient.slice(1) : cleanRecipient;
+                    recipientUser = await User.findOne({ usernameNormalized: cleanUsername }).session(session);
+                } else {
+                    recipientUser = await User.findById(cleanRecipient).session(session);
+                }
             }
 
             if (!recipientUser) {

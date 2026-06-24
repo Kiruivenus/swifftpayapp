@@ -363,6 +363,17 @@ class AdminService {
         });
     }
 
+    async getExchangePairs() {
+        return this.fetchJson('/api/admin/rates/exchange-pairs');
+    }
+
+    async updateExchangePair(data: any) {
+        return this.fetchJson('/api/admin/rates/exchange-pairs', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
     async getRatesHistory(params: { type?: string; page?: number; limit?: number } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/rates/history?${query}`);
@@ -592,6 +603,24 @@ class AdminService {
     async getSecurityAuditLogs(params: { q?: string; severity?: string; type?: string; page?: number; limit?: number } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/sessions/audit?${query}`);
+    }
+
+    // USDT deposit addresses pool management
+    async getUsdtAddresses(): Promise<any[]> {
+        return this.fetchJson('/api/admin/settings/usdt-addresses');
+    }
+
+    async addUsdtAddress(address: string): Promise<any> {
+        return this.fetchJson('/api/admin/settings/usdt-addresses', {
+            method: 'POST',
+            body: JSON.stringify({ address })
+        });
+    }
+
+    async deleteUsdtAddress(id: string): Promise<any> {
+        return this.fetchJson(`/api/admin/settings/usdt-addresses?id=${id}`, {
+            method: 'DELETE'
+        });
     }
 }
 

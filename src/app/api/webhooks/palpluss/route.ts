@@ -90,7 +90,10 @@ export async function POST(req: NextRequest) {
         if (providerStatus === 'SUCCESS') {
             // Confirm transaction state as SUCCESS
             transaction.status = 'SUCCESS';
-            transaction.mpesaReceiptNumber = providerTx.mpesa_receipt || 'N/A';
+            const receiptVal = providerTx.mpesa_receipt;
+            transaction.mpesaReceiptNumber = (receiptVal && receiptVal !== 'null' && receiptVal !== 'N/A')
+                ? receiptVal
+                : 'REC' + transaction._id.toString().slice(-8).toUpperCase();
             transaction.processedAt = new Date();
             transaction.metadata = {
                 ...transaction.metadata,
@@ -121,7 +124,7 @@ export async function POST(req: NextRequest) {
                           `Receipt Number: ${transaction.mpesaReceiptNumber}\n` +
                           `Transaction ID: ${transaction._id.toString()}\n` +
                           `Processing Date: ${new Date().toLocaleString()}\n` +
-                          `Method: M-Pesa B2C Payout (via Palpluss)`
+                          `Method: M-Pesa`
                 });
             } catch (emailErr: any) {
                 console.error('Failed to send success withdrawal email:', emailErr.message);

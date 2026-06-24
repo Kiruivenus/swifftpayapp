@@ -38,12 +38,13 @@ import {
     Send,
     LockKeyhole,
     Globe2,
-    CheckCircle
+    CheckCircle,
+    Coins
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState<'overview' | 'general' | 'gateways' | 'security' | 'email' | 'apikeys' | 'backups' | 'audit'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'general' | 'gateways' | 'security' | 'email' | 'apikeys' | 'backups' | 'audit' | 'crypto'>('overview');
     
     const [settings, setSettings] = useState<any>(null);
     const [health, setHealth] = useState<any>(null);
@@ -54,6 +55,10 @@ export default function SettingsPage() {
     const [apiKeys, setApiKeys] = useState<any[]>([]);
     const [backups, setBackups] = useState<any[]>([]);
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    
+    const [usdtAddresses, setUsdtAddresses] = useState<any[]>([]);
+    const [newUsdtAddress, setNewUsdtAddress] = useState('');
+    const [addingAddress, setAddingAddress] = useState(false);
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -157,6 +162,13 @@ export default function SettingsPage() {
             
             // Core system overview and configurations
             const systemRes = await adminService.getSettings();
+
+            try {
+                const addrs = await adminService.getUsdtAddresses();
+                setUsdtAddresses(addrs);
+            } catch (err) {
+                console.error('Failed to load USDT addresses pool:', err);
+            }
             
             if (systemRes.settings) {
                 const s = systemRes.settings;
@@ -510,6 +522,51 @@ export default function SettingsPage() {
         }
     };
 
+    const handleAddUsdtAddress = async () => {
+        if (!newUsdtAddress) {
+            triggerAlert('error', 'Address field is required.');
+            return;
+        }
+        if (!/^T[a-zA-Z0-9]{33}$/.test(newUsdtAddress.trim())) {
+            triggerAlert('error', 'Invalid TRON (TRC20) address format. Must start with T and be 34 characters.');
+            return;
+        }
+        try {
+            setAddingAddress(true);
+            const res = await adminService.addUsdtAddress(newUsdtAddress.trim());
+            if (res.success) {
+                triggerAlert('success', 'USDT Deposit Address added to pool.');
+                setNewUsdtAddress('');
+                const addrs = await adminService.getUsdtAddresses();
+                setUsdtAddresses(addrs);
+            } else {
+                triggerAlert('error', res.message || 'Failed to add address.');
+            }
+        } catch (err: any) {
+            triggerAlert('error', err.message || 'Failed to add USDT address.');
+        } finally {
+            setAddingAddress(false);
+        }
+    };
+
+    const handleDeleteUsdtAddress = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this USDT address? Active users using it will be re-assigned a new address automatically on their next load.')) {
+            return;
+        }
+        try {
+            const res = await adminService.deleteUsdtAddress(id);
+            if (res.success) {
+                triggerAlert('success', 'USDT Deposit Address removed from pool.');
+                const addrs = await adminService.getUsdtAddresses();
+                setUsdtAddresses(addrs);
+            } else {
+                triggerAlert('error', res.message || 'Failed to delete address.');
+            }
+        } catch (err: any) {
+            triggerAlert('error', err.message || 'Failed to delete USDT address.');
+        }
+    };
+
     const handleUploadLogo = async (type: 'logo' | 'logoDashboard' | 'logoMobile' | 'logoEmail' | 'favicon' | 'notificationIcon', e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -608,6 +665,7 @@ export default function SettingsPage() {
                     { id: 'overview', label: 'Overview Dashboard', icon: <Activity size={16} /> },
                     { id: 'general', label: 'General & Branding', icon: <Sliders size={16} /> },
                     { id: 'gateways', label: 'Payment Gateways', icon: <Globe2 size={16} /> },
+                    { id: 'crypto', label: 'USDT Address Pool', icon: <Coins size={16} /> },
                     { id: 'security', label: 'Security Controls', icon: <Shield size={16} /> },
                     { id: 'email', label: 'Email & Integrations', icon: <Mail size={16} /> },
                     { id: 'apikeys', label: 'Developer API Keys', icon: <Key size={16} /> },
@@ -1719,6 +1777,111 @@ export default function SettingsPage() {
                                                     <td className="p-4 font-mono text-slate-400">{log.ipAddress}</td>
                                                     <td className="p-4 text-slate-500 font-bold">{log.targetType || 'SYSTEM'}</td>
                                                     <td className="p-4 text-right text-slate-500 font-mono text-[10px]">{new Date(log.createdAt).toLocaleString()}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* USDT ADDRESS POOL TAB */}
+                {activeTab === 'crypto' && (
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="bg-[#0D1017] border border-[#1E2533] rounded-3xl p-8 shadow-2xl space-y-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-white/5 gap-4">
+                                <div>
+                                    <h3 className="text-xs font-black uppercase text-white tracking-widest flex items-center gap-2">
+                                        <Coins className="text-primary-orange" size={16} />
+                                        USDT TRC20 Deposit Address Pool
+                                    </h3>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-wider mt-1">
+                                        Manage deposit addresses assigned dynamically to users
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Add Address Form */}
+                            <div className="bg-[#050816] border border-white/5 p-6 rounded-2xl space-y-4">
+                                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                                    Add New Deposit Address
+                                </h4>
+                                <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    <div className="flex-1 space-y-2 w-full">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-0.5 font-mono">
+                                            TRON Network (TRC20) Wallet Address
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newUsdtAddress}
+                                            onChange={(e) => setNewUsdtAddress(e.target.value)}
+                                            placeholder="T..."
+                                            className="w-full px-4 py-3 bg-[#0D1017] border border-[#1E2533] rounded-xl text-xs text-white focus:outline-none focus:border-primary-orange font-mono"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleAddUsdtAddress}
+                                        disabled={addingAddress}
+                                        className="py-3 px-6 bg-primary-orange hover:bg-primary-orange-hover disabled:opacity-50 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap w-full md:w-auto"
+                                    >
+                                        {addingAddress ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
+                                        Add Address
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-500">
+                                    All deposit addresses added here must belong to the TRON network and support USDT.
+                                </p>
+                            </div>
+
+                            {/* Pool List Table */}
+                            <div className="border border-[#1E2533] rounded-2xl overflow-hidden mt-6">
+                                <table className="w-full border-collapse text-left">
+                                    <thead>
+                                        <tr className="bg-[#050816] border-b border-[#1E2533] text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                                            <th className="p-4">USDT Wallet Address</th>
+                                            <th className="p-4">Assigned Users Count</th>
+                                            <th className="p-4">Created At</th>
+                                            <th className="p-4">Status</th>
+                                            <th className="p-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#1E2533] text-xs">
+                                        {usdtAddresses.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="p-8 text-center text-slate-600 font-bold uppercase text-[9px]">
+                                                    No USDT addresses registered in the pool. User deposits will fall back to default settings config.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            usdtAddresses.map((item, idx) => (
+                                                <tr key={idx} className="hover:bg-white/[0.01]">
+                                                    <td className="p-4 font-mono text-[11px] text-slate-200 select-all">
+                                                        {item.address}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className="px-2 py-0.5 bg-[#050816] border border-[#1E2533] text-slate-300 rounded-full font-mono font-bold text-[10px]">
+                                                            {item.assignedUsersCount ?? 0} Users
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-slate-500 font-mono text-[10px]">
+                                                        {item.createdAt ? new Date(item.createdAt).toLocaleString() : 'N/A'}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[8px] font-black uppercase tracking-wider">
+                                                            ACTIVE POOL
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-right">
+                                                        <button
+                                                            onClick={() => handleDeleteUsdtAddress(item._id)}
+                                                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded transition-all"
+                                                            title="Delete and Re-assign users"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
