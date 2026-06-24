@@ -70,6 +70,14 @@ export default function UsersPage() {
     const [analytics, setAnalytics] = useState<any>(null);
     const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
+    // Custom Alert State
+    const [statusAlert, setStatusAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+    const triggerAlert = useCallback((type: 'success' | 'error', message: string) => {
+        setStatusAlert({ type, message });
+        setTimeout(() => setStatusAlert(null), 5000);
+    }, []);
+
     // Modals & Drawer State
     const [showAddAdmin, setShowAddAdmin] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -165,8 +173,9 @@ export default function UsersPage() {
             await adminService.updateUser(user._id, { status: newStatus });
             fetchUsers();
             fetchAnalytics();
+            triggerAlert('success', `User successfully ${newStatus === 'ACTIVE' ? 'unsuspended' : 'suspended'}.`);
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to update user status.');
         }
     };
 
@@ -566,6 +575,7 @@ export default function UsersPage() {
                     <AddAdminModal
                         onClose={() => setShowAddAdmin(false)}
                         onSuccess={() => { fetchUsers(); fetchAnalytics(); }}
+                        triggerAlert={triggerAlert}
                     />
                 )}
                 {selectedUserId && (
@@ -573,6 +583,7 @@ export default function UsersPage() {
                         userId={selectedUserId}
                         onClose={() => setSelectedUserId(null)}
                         onRefresh={() => { fetchUsers(); fetchAnalytics(); }}
+                        triggerAlert={triggerAlert}
                     />
                 )}
                 {showFreezeModal && (
@@ -580,6 +591,7 @@ export default function UsersPage() {
                         user={showFreezeModal}
                         onClose={() => setShowFreezeModal(null)}
                         onSuccess={() => { fetchUsers(); fetchAnalytics(); }}
+                        triggerAlert={triggerAlert}
                     />
                 )}
 
@@ -619,6 +631,16 @@ export default function UsersPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Global Warning Status Alert Popup */}
+            {statusAlert && (
+                <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-md shadow-2xl animate-in slide-in-from-top-6 duration-300 ${
+                    statusAlert.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/90 border-rose-500/30 text-rose-300'
+                }`}>
+                    <AlertCircle size={18} className={statusAlert.type === 'success' ? 'text-emerald-400' : 'text-rose-400'} />
+                    <p className="text-xs font-bold uppercase tracking-wider">{statusAlert.message}</p>
+                </div>
+            )}
         </div>
     );
 }
@@ -770,7 +792,7 @@ function UserMobileCard({ user, onView, onFreeze, onStatusChange }: any) {
 }
 
 // User Promotion to Admin Modal
-function AddAdminModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
+function AddAdminModal({ onClose, onSuccess, triggerAlert }: { onClose: () => void, onSuccess: () => void, triggerAlert: (type: 'success' | 'error', message: string) => void }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
@@ -796,11 +818,11 @@ function AddAdminModal({ onClose, onSuccess }: { onClose: () => void, onSuccess:
         try {
             setSubmitting(true);
             await adminService.promoteAdmin(selectedUser._id, role);
-            alert("Admin role assigned successfully");
+            triggerAlert("success", "Admin role assigned successfully");
             onSuccess();
             onClose();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert("error", err.message || "Failed to assign admin role.");
         } finally {
             setSubmitting(false);
         }
@@ -885,7 +907,7 @@ function AddAdminModal({ onClose, onSuccess }: { onClose: () => void, onSuccess:
 }
 
 // User Funds Restriction Hold Modal
-function FreezeFundsModal({ user, onClose, onSuccess }: { user: any, onClose: () => void, onSuccess: () => void }) {
+function FreezeFundsModal({ user, onClose, onSuccess, triggerAlert }: { user: any, onClose: () => void, onSuccess: () => void, triggerAlert: (type: 'success' | 'error', message: string) => void }) {
     const [currency, setCurrency] = useState('KES');
     const [amount, setAmount] = useState('');
     const [reason, setReason] = useState('');
@@ -893,7 +915,7 @@ function FreezeFundsModal({ user, onClose, onSuccess }: { user: any, onClose: ()
 
     const handleFreeze = async () => {
         if (!amount || !reason || reason.length < 10) {
-            alert("Please provide amount and a reason (min 10 chars)");
+            triggerAlert("error", "Please provide amount and a reason (min 10 chars)");
             return;
         }
         try {
@@ -903,11 +925,11 @@ function FreezeFundsModal({ user, onClose, onSuccess }: { user: any, onClose: ()
                 amount: parseFloat(amount),
                 reason
             });
-            alert("Funds locked successfully");
+            triggerAlert("success", "Funds locked successfully");
             onSuccess();
             onClose();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert("error", err.message || "Failed to freeze funds.");
         } finally {
             setSubmitting(false);
         }
@@ -972,7 +994,7 @@ function FreezeFundsModal({ user, onClose, onSuccess }: { user: any, onClose: ()
 }
 
 // Unified Intelligence Drawer (Multi-tab system console)
-function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onClose: () => void, onRefresh: () => void }) {
+function UserDetailsDrawer({ userId, onClose, onRefresh, triggerAlert }: { userId: string, onClose: () => void, onRefresh: () => void, triggerAlert: (type: 'success' | 'error', message: string) => void }) {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('details'); // details, kyc, wallet, security, history
@@ -1023,11 +1045,11 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
                 role: editData.role,
                 status: editData.status
             });
-            alert('User profile details updated successfully.');
+            triggerAlert('success', 'User profile details updated successfully.');
             onRefresh();
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to update profile details.');
         } finally {
             setSubmitting(null);
         }
@@ -1036,16 +1058,16 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
     // Handle password reset
     const handleResetPassword = async () => {
         if (!newPassword || newPassword.length < 8) {
-            alert('Password must be at least 8 characters long.');
+            triggerAlert('error', 'Password must be at least 8 characters long.');
             return;
         }
         try {
             setSubmitting('password');
             await adminService.resetUserPassword(userId, newPassword);
-            alert('Password reset successfully.');
+            triggerAlert('success', 'Password reset successfully.');
             setNewPassword('');
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to reset password.');
         } finally {
             setSubmitting(null);
         }
@@ -1057,10 +1079,10 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
         try {
             setSubmitting('logout');
             const data = await adminService.forceUserLogout(userId);
-            alert(data.message || 'All user sessions revoked successfully.');
+            triggerAlert('success', data.message || 'All user sessions revoked successfully.');
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to revoke sessions.');
         } finally {
             setSubmitting(null);
         }
@@ -1071,16 +1093,17 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
         if (!confirm('Revoke this session?')) return;
         try {
             await adminService.revokeSession(sessionId);
+            triggerAlert('success', 'Session revoked successfully.');
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to revoke session.');
         }
     };
 
     // Handle KYC status change
     const handleKycApproval = async (approve: boolean) => {
         if (!approve && !rejectionReason.trim()) {
-            alert('Please provide a rejection reason.');
+            triggerAlert('error', 'Please provide a rejection reason.');
             return;
         }
         if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this KYC credentials?`)) return;
@@ -1091,12 +1114,12 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
                 kycStatus: approve ? 'APPROVED' : 'REJECTED',
                 kycRejectionReason: approve ? '' : rejectionReason
             });
-            alert(`KYC status updated to ${approve ? 'APPROVED' : 'REJECTED'}.`);
+            triggerAlert('success', `KYC status updated to ${approve ? 'APPROVED' : 'REJECTED'}.`);
             setRejectionReason('');
             onRefresh();
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to update KYC status.');
         } finally {
             setSubmitting(null);
         }
@@ -1108,11 +1131,11 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
         if (reason === null) return;
         try {
             await adminService.releaseHold(holdId, reason);
-            alert('Funds restriction lifted.');
+            triggerAlert('success', 'Funds restriction lifted.');
             onRefresh();
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to release hold.');
         }
     };
 
@@ -1121,11 +1144,11 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
         e.preventDefault();
         const amt = parseFloat(adjustData.amount);
         if (isNaN(amt) || amt <= 0) {
-            alert('Please enter a positive numeric amount.');
+            triggerAlert('error', 'Please enter a positive numeric amount.');
             return;
         }
         if (!adjustData.reason.trim()) {
-            alert('Please provide a verification reason.');
+            triggerAlert('error', 'Please provide a verification reason.');
             return;
         }
 
@@ -1137,12 +1160,12 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
                 type: adjustData.type as 'CREDIT' | 'DEBIT',
                 reason: adjustData.reason
             });
-            alert('Wallet balance adjusted successfully.');
+            triggerAlert('success', 'Wallet balance adjusted successfully.');
             setAdjustData({ currency: 'KES', amount: '', type: 'CREDIT', reason: '' });
             onRefresh();
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to adjust balance.');
         } finally {
             setSubmitting(null);
         }
@@ -1152,7 +1175,7 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
     const handleSendNotification = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!notifyData.title.trim() || !notifyData.message.trim()) {
-            alert('Please fill out title and message fields.');
+            triggerAlert('error', 'Please fill out title and message fields.');
             return;
         }
 
@@ -1163,11 +1186,11 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
                 message: notifyData.message,
                 type: notifyData.type
             });
-            alert('Notification dispatched successfully.');
+            triggerAlert('success', 'Notification dispatched successfully.');
             setNotifyData({ title: '', message: '', type: 'SYSTEM' });
             fetchProfile();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to send notification.');
         } finally {
             setSubmitting(null);
         }
@@ -1191,11 +1214,11 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
         try {
             setSubmitting('delete');
             const res = await adminService.deleteUser(userId);
-            alert(res.message || 'User deleted successfully.');
+            triggerAlert('success', res.message || 'User deleted successfully.');
             onRefresh();
             onClose();
         } catch (err: any) {
-            alert(err.message);
+            triggerAlert('error', err.message || 'Failed to delete user.');
         } finally {
             setSubmitting(null);
         }
@@ -1492,14 +1515,14 @@ function UserDetailsDrawer({ userId, onClose, onRefresh }: { userId: string, onC
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-5 bg-[#07090E]/30 border border-[#1E2533] rounded-2xl">
                                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-0.5">KES Balance</span>
-                                            <p className="text-xl font-black text-white font-mono mt-1">{(profile?.wallet?.kesBalance || 0).toLocaleString()}</p>
+                                            <p className="text-xl font-black text-white font-mono mt-1">{(profile?.user?.kesBalance || 0).toLocaleString()}</p>
                                             {profile?.wallet?.lockedKES > 0 && (
                                                 <span className="text-[9px] font-bold text-rose-400 mt-2 block font-mono">-{profile.wallet.lockedKES.toLocaleString()} Locked (Frozen)</span>
                                             )}
                                         </div>
                                         <div className="p-5 bg-[#07090E]/30 border border-[#1E2533] rounded-2xl">
                                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest pl-0.5">USDT Balance</span>
-                                            <p className="text-xl font-black text-[#FF6B00] font-mono mt-1">{(profile?.wallet?.usdtBalance || 0).toLocaleString()}</p>
+                                            <p className="text-xl font-black text-[#FF6B00] font-mono mt-1">{(profile?.user?.usdtBalance || 0).toLocaleString()}</p>
                                             {profile?.wallet?.lockedUSDT > 0 && (
                                                 <span className="text-[9px] font-bold text-rose-400 mt-2 block font-mono">-{profile.wallet.lockedUSDT.toLocaleString()} Locked (Frozen)</span>
                                             )}

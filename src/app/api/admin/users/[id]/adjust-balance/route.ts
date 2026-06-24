@@ -42,9 +42,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             // Create wallet if not exists
             wallet = await Wallet.create({
                 userId,
-                kesBalance: 0,
-                usdtBalance: 0
+                kesBalance: user.kesBalance || 0,
+                usdtBalance: user.usdtBalance || 0
             });
+        } else {
+            // Sync wallet balances from user model
+            wallet.kesBalance = user.kesBalance || 0;
+            wallet.usdtBalance = user.usdtBalance || 0;
         }
 
         const balanceField = currency === 'KES' ? 'kesBalance' : 'usdtBalance';
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         // Check funds if debiting
         if (type === 'DEBIT') {
-            const availableFunds = wallet[balanceField] - (wallet[lockedField] || 0);
+            const availableFunds = user[balanceField] - (wallet[lockedField] || 0);
             if (numericAmount > availableFunds) {
                 return NextResponse.json({ message: `Insufficient available funds. Current: ${currency} ${availableFunds}` }, { status: 400 });
             }
@@ -61,12 +65,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Apply ledger changes
         const adjustment = type === 'CREDIT' ? numericAmount : -numericAmount;
         
-        wallet[balanceField] += adjustment;
-        wallet.lastUpdated = new Date();
-        await wallet.save();
-
         user[balanceField] += adjustment;
         await user.save();
+
+        wallet[balanceField] = user[balanceField];
+        wallet.lastUpdated = new Date();
+        await wallet.save();
 
         // Create transaction history document
         const transaction = await Transaction.create({

@@ -28,14 +28,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         await dbConnect();
 
         // 1. Check user & wallet
-        const wallet = await Wallet.findOne({ userId });
-        if (!wallet) return NextResponse.json({ message: 'Wallet not found' }, { status: 404 });
+        const user = await User.findById(userId);
+        if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
+
+        let wallet = await Wallet.findOne({ userId });
+        if (!wallet) {
+            wallet = await Wallet.create({
+                userId,
+                kesBalance: user.kesBalance || 0,
+                usdtBalance: user.usdtBalance || 0
+            });
+        } else {
+            // Sync balances from user model
+            wallet.kesBalance = user.kesBalance || 0;
+            wallet.usdtBalance = user.usdtBalance || 0;
+        }
 
         // 2. Check available balance
         const balanceField = currency === 'KES' ? 'kesBalance' : 'usdtBalance';
         const lockedField = currency === 'KES' ? 'lockedKES' : 'lockedUSDT';
 
-        const available = wallet[balanceField] - wallet[lockedField];
+        const available = user[balanceField] - wallet[lockedField];
         if (amount > available) {
             return NextResponse.json({ message: 'Insufficient available balance to freeze' }, { status: 400 });
         }
