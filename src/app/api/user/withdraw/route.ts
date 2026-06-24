@@ -74,7 +74,10 @@ export async function POST(req: NextRequest) {
         }
 
         // A. Min Withdrawal Check
-        const minWithdraw = feesLimits.minWithdrawByCurrency?.[currency] || 50;
+        let minWithdraw = feesLimits.minWithdrawByCurrency?.[currency];
+        if (minWithdraw === undefined || minWithdraw === 50) {
+            minWithdraw = 10;
+        }
         if (amount < minWithdraw) {
             return NextResponse.json({
                 message: `Minimum withdrawal for ${currency} is ${minWithdraw}`

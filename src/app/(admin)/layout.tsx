@@ -167,6 +167,13 @@ export default function AdminLayout({
                         active={pathname?.startsWith('/admin/finance')} 
                         collapsed={collapsed}
                     />
+                    <NavItem 
+                        href="/admin/disputes" 
+                        icon={<ShieldAlert size={20} />} 
+                        label="Disputes & Holds" 
+                        active={pathname?.startsWith('/admin/disputes')} 
+                        collapsed={collapsed}
+                    />
 
                     <div className={`pt-6 pb-2 px-3 text-[9px] font-black text-slate-600 uppercase tracking-[0.25em] transition-all
                         ${collapsed ? 'text-center pl-0 pr-0 scale-75' : ''}

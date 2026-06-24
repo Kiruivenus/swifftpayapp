@@ -66,7 +66,7 @@ const PlatformFeesLimitsSchema = new Schema({
     minWithdrawByCurrency: {
         type: Map,
         of: Number,
-        default: { 'KES': 500, 'USDT': 5 },
+        default: { 'KES': 10, 'USDT': 10 },
     },
     dailyLimitVerifiedByCurrency: {
         type: Map,
