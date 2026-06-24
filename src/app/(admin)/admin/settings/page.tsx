@@ -1875,7 +1875,7 @@ export default function SettingsPage() {
                                                     </td>
                                                     <td className="p-4 text-right">
                                                         <button
-                                                            onClick={() => handleDeleteUsdtAddress(item._id)}
+                                                            onClick={() => handleDeleteUsdtAddress(item.id || item._id)}
                                                             className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded transition-all"
                                                             title="Delete and Re-assign users"
                                                         >
