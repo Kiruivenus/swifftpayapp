@@ -479,10 +479,76 @@ class AdminService {
         });
     }
 
+    async getSecurityPolicies() {
+        return this.fetchJson('/api/admin/security-policies');
+    }
+
     async updateSecurityPolicies(data: any) {
         return this.fetchJson('/api/admin/security-policies', {
             method: 'PUT',
             body: JSON.stringify(data),
+        });
+    }
+
+    // Email Integration Testing & Queue Logs
+    async testEmailSettings(data: { provider: string; toEmail: string }) {
+        return this.fetchJson('/api/admin/settings/email/test', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getEmailLogs() {
+        return this.fetchJson('/api/admin/settings/email/logs');
+    }
+
+    // API Keys management
+    async getApiKeys() {
+        return this.fetchJson('/api/admin/settings/apikeys');
+    }
+
+    async createApiKey(data: { name: string; rateLimit?: number }) {
+        return this.fetchJson('/api/admin/settings/apikeys', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async revokeApiKey(id: string) {
+        return this.fetchJson(`/api/admin/settings/apikeys/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ action: 'REVOKE' }),
+        });
+    }
+
+    async regenerateApiKey(id: string) {
+        return this.fetchJson(`/api/admin/settings/apikeys/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ action: 'REGENERATE' }),
+        });
+    }
+
+    async deleteApiKey(id: string) {
+        return this.fetchJson(`/api/admin/settings/apikeys/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // Backup & Restore
+    async getBackups() {
+        return this.fetchJson('/api/admin/settings/backup');
+    }
+
+    async createBackup() {
+        return this.fetchJson('/api/admin/settings/backup', {
+            method: 'POST',
+        });
+    }
+
+    async restoreBackup(filename: string) {
+        return this.fetchJson('/api/admin/settings/backup', {
+            method: 'PUT',
+            body: JSON.stringify({ filename }),
         });
     }
 }

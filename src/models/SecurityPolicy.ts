@@ -5,6 +5,10 @@ const SecurityPolicySchema = new Schema({
         type: Boolean,
         default: false,
     },
+    enforce2faAllUsers: {
+        type: Boolean,
+        default: false,
+    },
     blockNonKenyanIps: {
         type: Boolean,
         default: false,
@@ -12,6 +16,18 @@ const SecurityPolicySchema = new Schema({
     allowedCountries: {
         type: [String],
         default: ['KE'],
+    },
+    ipWhitelist: {
+        type: [String],
+        default: [],
+    },
+    ipBlacklist: {
+        type: [String],
+        default: [],
+    },
+    deviceRestrictionsEnabled: {
+        type: Boolean,
+        default: false,
     },
     sessionMaxAgeHours: {
         type: Number,

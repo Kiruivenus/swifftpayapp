@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { type, image } = body; // type: 'logo' | 'favicon'
+        const { type, image } = body; 
 
         if (!image) {
             return NextResponse.json({ message: 'Image data is required.' }, { status: 400 });
@@ -28,12 +28,27 @@ export async function POST(req: NextRequest) {
 
         const imageUrl = await saveImage(image, 'branding');
 
-        const before = { logoUrl: settings.logoUrl, faviconUrl: settings.faviconUrl };
+        const before = { 
+            logoUrl: settings.logoUrl, 
+            logoDashboardUrl: settings.logoDashboardUrl,
+            logoMobileUrl: settings.logoMobileUrl,
+            logoEmailUrl: settings.logoEmailUrl,
+            faviconUrl: settings.faviconUrl,
+            notificationIconUrl: settings.notificationIconUrl
+        };
 
         if (type === 'logo') {
             settings.logoUrl = imageUrl;
+        } else if (type === 'logoDashboard') {
+            settings.logoDashboardUrl = imageUrl;
+        } else if (type === 'logoMobile') {
+            settings.logoMobileUrl = imageUrl;
+        } else if (type === 'logoEmail') {
+            settings.logoEmailUrl = imageUrl;
         } else if (type === 'favicon') {
             settings.faviconUrl = imageUrl;
+        } else if (type === 'notificationIcon') {
+            settings.notificationIconUrl = imageUrl;
         } else {
             return NextResponse.json({ message: 'Invalid asset type.' }, { status: 400 });
         }
@@ -42,7 +57,14 @@ export async function POST(req: NextRequest) {
         settings.updatedAt = new Date();
         await settings.save();
 
-        const after = { logoUrl: settings.logoUrl, faviconUrl: settings.faviconUrl };
+        const after = { 
+            logoUrl: settings.logoUrl, 
+            logoDashboardUrl: settings.logoDashboardUrl,
+            logoMobileUrl: settings.logoMobileUrl,
+            logoEmailUrl: settings.logoEmailUrl,
+            faviconUrl: settings.faviconUrl,
+            notificationIconUrl: settings.notificationIconUrl
+        };
 
         // Audit log
         const ip = req.headers.get('x-forwarded-for') || 'Unknown';

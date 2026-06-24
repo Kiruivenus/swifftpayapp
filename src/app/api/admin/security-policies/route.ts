@@ -5,6 +5,19 @@ import { validateAdmin } from '@/lib/adminAuth';
 import { PERMISSIONS, ROLES } from '@/lib/rbac';
 import { logAdminAction } from '@/lib/audit';
 
+export async function GET(req: NextRequest) {
+    const { error } = await validateAdmin(req, PERMISSIONS.PLATFORM_SETTINGS);
+    if (error) return error;
+
+    try {
+        await dbConnect();
+        const policies = await (SecurityPolicy as any).getSettings();
+        return NextResponse.json({ success: true, data: policies });
+    } catch (err: any) {
+        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    }
+}
+
 export async function PUT(req: NextRequest) {
     const { error, user: admin } = await validateAdmin(req, PERMISSIONS.PLATFORM_SETTINGS);
     if (error) return error;
@@ -28,8 +41,12 @@ export async function PUT(req: NextRequest) {
         // Update allowed fields
         const allowedFields = [
             'mandatory2faForAdmins',
+            'enforce2faAllUsers',
             'blockNonKenyanIps',
             'allowedCountries',
+            'ipWhitelist',
+            'ipBlacklist',
+            'deviceRestrictionsEnabled',
             'sessionMaxAgeHours',
             'maxFailedLogins',
             'lockoutMinutes'

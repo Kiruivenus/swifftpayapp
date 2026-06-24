@@ -19,7 +19,9 @@ export async function PUT(req: NextRequest) {
         const body = await req.json();
         const {
             mpesaConsumerKey, mpesaConsumerSecret, mpesaPasskey, mpesaShortCode, mpesaEnvironment,
-            sendgridApiKey, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom
+            sendgridApiKey, smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom,
+            preferredEmailProvider,
+            resendApiKey, mailgunApiKey, mailgunDomain, sesAccessKeyId, sesSecretAccessKey, sesRegion
         } = body;
 
         await dbConnect();
@@ -46,6 +48,32 @@ export async function PUT(req: NextRequest) {
         if (sendgridApiKey) {
             settings.sendgridApiKey = encrypt(sendgridApiKey);
             changes.sendgridApiKey = 'UPDATED';
+        }
+
+        if (resendApiKey) {
+            settings.resendApiKey = encrypt(resendApiKey);
+            changes.resendApiKey = 'UPDATED';
+        }
+
+        if (mailgunApiKey) {
+            settings.mailgunApiKey = encrypt(mailgunApiKey);
+            changes.mailgunApiKey = 'UPDATED';
+        }
+        if (mailgunDomain !== undefined) settings.mailgunDomain = mailgunDomain;
+
+        if (sesAccessKeyId) {
+            settings.sesAccessKeyId = encrypt(sesAccessKeyId);
+            changes.sesAccessKeyId = 'UPDATED';
+        }
+        if (sesSecretAccessKey) {
+            settings.sesSecretAccessKey = encrypt(sesSecretAccessKey);
+            changes.sesSecretAccessKey = 'UPDATED';
+        }
+        if (sesRegion !== undefined) settings.sesRegion = sesRegion;
+
+        if (preferredEmailProvider !== undefined) {
+            settings.preferredEmailProvider = preferredEmailProvider;
+            changes.preferredEmailProvider = preferredEmailProvider;
         }
 
         if (smtpHost !== undefined) settings.smtpHost = smtpHost;

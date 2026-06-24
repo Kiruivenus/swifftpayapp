@@ -21,24 +21,21 @@ export async function PUT(req: NextRequest) {
             referralMaxRewardUsd,
             referralCardSpendRequirementUsd,
             referralCardSpendDaysLimit,
-            referralDepositRequirementUsd
+            referralDepositRequirementUsd,
+            
+            // New toggles and branding fields
+            registrationEnabled,
+            depositsEnabled,
+            withdrawalsEnabled,
+            notificationsEnabled,
+            brandColors,
+            typography,
+            gatewaysEnabled
         } = body;
 
         await dbConnect();
         const settings = await (PlatformSettings as any).getSettings();
-
-        const before = {
-            platformName: settings.platformName,
-            supportEmail: settings.supportEmail,
-            maintenanceMode: settings.maintenanceMode,
-            maintenanceMessage: settings.maintenanceMessage,
-            referralEnabled: settings.referralEnabled,
-            referralMinRewardUsd: settings.referralMinRewardUsd,
-            referralMaxRewardUsd: settings.referralMaxRewardUsd,
-            referralCardSpendRequirementUsd: settings.referralCardSpendRequirementUsd,
-            referralCardSpendDaysLimit: settings.referralCardSpendDaysLimit,
-            referralDepositRequirementUsd: settings.referralDepositRequirementUsd
-        };
+        const before = JSON.parse(JSON.stringify(settings));
 
         // Update fields
         if (platformName !== undefined) settings.platformName = platformName;
@@ -52,22 +49,36 @@ export async function PUT(req: NextRequest) {
         if (referralCardSpendDaysLimit !== undefined) settings.referralCardSpendDaysLimit = Number(referralCardSpendDaysLimit);
         if (referralDepositRequirementUsd !== undefined) settings.referralDepositRequirementUsd = Number(referralDepositRequirementUsd);
 
+        if (registrationEnabled !== undefined) settings.registrationEnabled = registrationEnabled;
+        if (depositsEnabled !== undefined) settings.depositsEnabled = depositsEnabled;
+        if (withdrawalsEnabled !== undefined) settings.withdrawalsEnabled = withdrawalsEnabled;
+        if (notificationsEnabled !== undefined) settings.notificationsEnabled = notificationsEnabled;
+        
+        if (gatewaysEnabled !== undefined) {
+            settings.gatewaysEnabled = {
+                mpesa: gatewaysEnabled.mpesa !== undefined ? !!gatewaysEnabled.mpesa : settings.gatewaysEnabled?.mpesa,
+                paypal: gatewaysEnabled.paypal !== undefined ? !!gatewaysEnabled.paypal : settings.gatewaysEnabled?.paypal,
+                stripe: gatewaysEnabled.stripe !== undefined ? !!gatewaysEnabled.stripe : settings.gatewaysEnabled?.stripe,
+                crypto: gatewaysEnabled.crypto !== undefined ? !!gatewaysEnabled.crypto : settings.gatewaysEnabled?.crypto,
+                bank: gatewaysEnabled.bank !== undefined ? !!gatewaysEnabled.bank : settings.gatewaysEnabled?.bank
+            };
+        }
+
+        if (brandColors !== undefined) {
+            settings.brandColors = {
+                primary: brandColors.primary !== undefined ? brandColors.primary : settings.brandColors?.primary,
+                secondary: brandColors.secondary !== undefined ? brandColors.secondary : settings.brandColors?.secondary,
+                darkBase: brandColors.darkBase !== undefined ? brandColors.darkBase : settings.brandColors?.darkBase,
+                cardBg: brandColors.cardBg !== undefined ? brandColors.cardBg : settings.brandColors?.cardBg
+            };
+        }
+        if (typography !== undefined) settings.typography = typography;
+
         settings.updatedBy = admin.id;
         settings.updatedAt = new Date();
         await settings.save();
 
-        const after = {
-            platformName: settings.platformName,
-            supportEmail: settings.supportEmail,
-            maintenanceMode: settings.maintenanceMode,
-            maintenanceMessage: settings.maintenanceMessage,
-            referralEnabled: settings.referralEnabled,
-            referralMinRewardUsd: settings.referralMinRewardUsd,
-            referralMaxRewardUsd: settings.referralMaxRewardUsd,
-            referralCardSpendRequirementUsd: settings.referralCardSpendRequirementUsd,
-            referralCardSpendDaysLimit: settings.referralCardSpendDaysLimit,
-            referralDepositRequirementUsd: settings.referralDepositRequirementUsd
-        };
+        const after = JSON.parse(JSON.stringify(settings));
 
         // Audit log
         const ip = req.headers.get('x-forwarded-for') || 'Unknown';

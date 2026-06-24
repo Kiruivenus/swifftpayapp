@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 
 import LogoutButton from '@/components/admin/LogoutButton';
+import { adminService } from '@/services/admin.service';
 
 export default function AdminLayout({
     children,
@@ -35,6 +36,58 @@ export default function AdminLayout({
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [platformName, setPlatformName] = useState('SwiftPay');
+    const [logoUrl, setLogoUrl] = useState('/logo.png');
+
+    useEffect(() => {
+        adminService.getSettings().then(res => {
+            if (res.success && res.settings) {
+                const settings = res.settings;
+                if (settings.platformName) setPlatformName(settings.platformName);
+                
+                const customLogo = settings.logoDashboardUrl || settings.logoUrl;
+                if (customLogo) setLogoUrl(customLogo);
+
+                // Apply CSS variables for colors & typography
+                const colors = settings.brandColors || {};
+                const primary = colors.primary || '#FF6B00';
+                const secondary = colors.secondary || '#0D1017';
+                const darkBase = colors.darkBase || '#050816';
+                const cardBg = colors.cardBg || '#0D1017';
+                const typography = settings.typography || 'Outfit';
+
+                const root = document.documentElement;
+                root.style.setProperty('--primary', primary);
+                root.style.setProperty('--color-primary-orange', primary);
+                root.style.setProperty('--background', darkBase);
+                root.style.setProperty('--card', cardBg);
+
+                // Helper border/glow colors based on primary color
+                if (primary.startsWith('#')) {
+                    const cleanHex = primary.slice(1);
+                    const r = parseInt(cleanHex.slice(0, 2), 16) || 0;
+                    const g = parseInt(cleanHex.slice(2, 4), 16) || 0;
+                    const b = parseInt(cleanHex.slice(4, 6), 16) || 0;
+                    root.style.setProperty('--color-primary-orange-light', `rgba(${r}, ${g}, ${b}, 0.1)`);
+                    root.style.setProperty('--color-primary-orange-border', `rgba(${r}, ${g}, ${b}, 0.25)`);
+                }
+
+                // Append font family dynamically
+                const fontId = 'dynamic-brand-font';
+                let fontLink = document.getElementById(fontId) as HTMLLinkElement;
+                if (!fontLink) {
+                    fontLink = document.createElement('link');
+                    fontLink.id = fontId;
+                    fontLink.rel = 'stylesheet';
+                    document.head.appendChild(fontLink);
+                }
+                fontLink.href = `https://fonts.googleapis.com/css2?family=${typography.replace(/ /g, '+')}:wght@300;400;500;600;700;900&display=swap`;
+                root.style.setProperty('--font-sans', `'${typography}', 'Plus Jakarta Sans', sans-serif`);
+            }
+        }).catch(err => {
+            console.error('Failed to load dynamic brand settings:', err);
+        });
+    }, []);
 
     return (
         <div className="flex h-screen bg-[#07090E] text-[#F3F4F6] overflow-hidden font-sans">
@@ -58,11 +111,11 @@ export default function AdminLayout({
                 <div className="p-5 border-b border-[#1E2533] flex items-center justify-between h-16">
                     <div className="flex items-center gap-3 overflow-hidden">
                         <div className="w-9 h-9 bg-transparent rounded-xl flex items-center justify-center shrink-0 transition-all hover:scale-105 duration-300">
-                            <img src="/logo.png" alt="SwiftPay Logo" className="w-9 h-9 object-contain rounded-xl" />
+                            <img src={logoUrl} alt={`${platformName} Logo`} className="w-9 h-9 object-contain rounded-xl" />
                         </div>
                         {!collapsed && (
                             <div className="animate-in fade-in duration-300">
-                                <h1 className="text-base font-bold text-white tracking-tight leading-none">SwiftPay</h1>
+                                <h1 className="text-base font-bold text-white tracking-tight leading-none">{platformName}</h1>
                                 <p className="text-[9px] text-[#FF7A00] uppercase font-black tracking-widest mt-1">Control Hub</p>
                             </div>
                         )}
