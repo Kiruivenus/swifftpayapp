@@ -5,6 +5,22 @@ const ConversionControlSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    depositsFrozen: {
+        type: Boolean,
+        default: false,
+    },
+    withdrawalsFrozen: {
+        type: Boolean,
+        default: false,
+    },
+    disabledRegions: {
+        type: [String],
+        default: [],
+    },
+    disabledCurrencies: {
+        type: [String],
+        default: [],
+    },
     freezeReason: {
         type: String,
         default: '',

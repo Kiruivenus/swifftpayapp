@@ -25,6 +25,36 @@ const RegionSchema = new Schema({
         type: Boolean,
         default: true,
     },
+    status: {
+        type: String,
+        enum: ['ENABLED', 'DISABLED', 'MAINTENANCE', 'RESTRICTED'],
+        default: 'ENABLED',
+    },
+    operationalHealth: {
+        type: String,
+        enum: ['HEALTHY', 'DEGRADED', 'OUTAGE'],
+        default: 'HEALTHY',
+    },
+    paymentMethods: {
+        type: [String],
+        default: ['Mobile Money', 'Bank Transfer'],
+    },
+    withdrawalMethods: {
+        type: [String],
+        default: ['Mobile Money', 'Bank Transfer'],
+    },
+    kycRequirements: {
+        type: [String],
+        default: ['Level 1 - Identity'],
+    },
+    taxRules: {
+        withholdingTaxPercent: { type: Number, default: 0 },
+        vatPercent: { type: Number, default: 0 },
+    },
+    limits: {
+        dailyMax: { type: Number, default: 100000 },
+        lifetimeMax: { type: Number, default: 1000000 },
+    },
     defaultForNewUsers: {
         type: Boolean,
         default: false,

@@ -15,14 +15,23 @@ const FxRateSchema = new Schema({
         type: Number,
         required: true,
     },
+    previousRate: {
+        type: Number,
+    },
+    changePercentage: {
+        type: Number,
+        default: 0,
+    },
+    isLocked: {
+        type: Boolean,
+        default: false,
+    },
     source: {
         type: String,
-        enum: ['manual', 'provider'],
         default: 'manual',
     },
     providerName: {
         type: String,
-        optional: true,
     },
     isActive: {
         type: Boolean,

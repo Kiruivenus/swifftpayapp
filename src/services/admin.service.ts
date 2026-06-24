@@ -325,6 +325,44 @@ class AdminService {
         });
     }
 
+    async toggleEmergencyFreeze(data: { conversionsFrozen?: boolean; depositsFrozen?: boolean; withdrawalsFrozen?: boolean; disabledRegions?: string[]; disabledCurrencies?: string[]; reason: string }) {
+        return this.fetchJson('/api/admin/rates/freeze', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async toggleRatePairLock(baseCurrency: string, quoteCurrency: string, isLocked: boolean) {
+        return this.fetchJson('/api/admin/rates/pairs/lock', {
+            method: 'POST',
+            body: JSON.stringify({ baseCurrency, quoteCurrency, isLocked }),
+        });
+    }
+
+    async getCurrencies() {
+        return this.fetchJson('/api/admin/rates/currencies');
+    }
+
+    async addCurrency(data: any) {
+        return this.fetchJson('/api/admin/rates/currencies', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async updateCurrency(code: string, data: any) {
+        return this.fetchJson(`/api/admin/rates/currencies/${code}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async deleteCurrency(code: string) {
+        return this.fetchJson(`/api/admin/rates/currencies/${code}`, {
+            method: 'DELETE',
+        });
+    }
+
     async getRatesHistory(params: { type?: string; page?: number; limit?: number } = {}) {
         const query = new URLSearchParams(params as any).toString();
         return this.fetchJson(`/api/admin/rates/history?${query}`);

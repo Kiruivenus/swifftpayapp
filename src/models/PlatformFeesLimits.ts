@@ -1,6 +1,23 @@
 import mongoose, { Schema, model, models } from 'mongoose';
 
+const FeeConfigSchema = new Schema({
+    type: {
+        type: String,
+        enum: ['percentage', 'fixed', 'tiered'],
+        default: 'percentage',
+    },
+    value: {
+        type: Number,
+        default: 0,
+    },
+    tiers: [{
+        limit: { type: Number, required: true },
+        fee: { type: Number, required: true }
+    }]
+}, { _id: false });
+
 const PlatformFeesLimitsSchema = new Schema({
+    // Legacy Fields (For backwards compatibility)
     withdrawalFeePercent: {
         type: Number,
         default: 1.0, // 1%
@@ -13,6 +30,34 @@ const PlatformFeesLimitsSchema = new Schema({
         type: Number,
         default: 1.0, // $1.00
     },
+
+    // Expanded Multi-mode Fee Structures
+    depositFee: {
+        type: FeeConfigSchema,
+        default: () => ({ type: 'percentage', value: 0, tiers: [] }),
+    },
+    withdrawalFee: {
+        type: FeeConfigSchema,
+        default: () => ({ type: 'percentage', value: 1.0, tiers: [] }),
+    },
+    transferFee: {
+        type: FeeConfigSchema,
+        default: () => ({ type: 'percentage', value: 0.1, tiers: [] }),
+    },
+    conversionFee: {
+        type: FeeConfigSchema,
+        default: () => ({ type: 'percentage', value: 0.5, tiers: [] }),
+    },
+    networkFee: {
+        type: FeeConfigSchema,
+        default: () => ({ type: 'fixed', value: 1.0, tiers: [] }),
+    },
+    regionalFees: {
+        type: Map,
+        of: Number,
+        default: {},
+    },
+
     minDepositByCurrency: {
         type: Map,
         of: Number,

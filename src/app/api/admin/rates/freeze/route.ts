@@ -12,19 +12,35 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { frozen, reason = '' } = body;
+        const {
+            conversionsFrozen,
+            depositsFrozen,
+            withdrawalsFrozen,
+            disabledRegions,
+            disabledCurrencies,
+            frozen, // Legacy support
+            reason = ''
+        } = body;
 
         await dbConnect();
         const control = await (ConversionControl as any).getSettings();
-        const before = { frozen: control.conversionsFrozen, reason: control.freezeReason };
+        const before = JSON.parse(JSON.stringify(control));
 
-        control.conversionsFrozen = frozen;
+        // Set parameters if provided
+        if (conversionsFrozen !== undefined) control.conversionsFrozen = conversionsFrozen;
+        else if (frozen !== undefined) control.conversionsFrozen = frozen; // Fallback
+        
+        if (depositsFrozen !== undefined) control.depositsFrozen = depositsFrozen;
+        if (withdrawalsFrozen !== undefined) control.withdrawalsFrozen = withdrawalsFrozen;
+        if (disabledRegions !== undefined) control.disabledRegions = disabledRegions;
+        if (disabledCurrencies !== undefined) control.disabledCurrencies = disabledCurrencies;
+        
         control.freezeReason = reason;
         control.frozenBy = admin.id;
         control.frozenAt = new Date();
         await control.save();
 
-        const after = { frozen, reason };
+        const after = JSON.parse(JSON.stringify(control));
 
         // Audit Log
         const ip = req.headers.get('x-forwarded-for') || 'Unknown';
@@ -34,13 +50,13 @@ export async function POST(req: NextRequest) {
             actorId: admin.id,
             actorName: admin.name || admin.email,
             actorRole: admin.role,
-            actionType: frozen ? 'FREEZE_CONVERSIONS' : 'UNFREEZE_CONVERSIONS',
+            actionType: 'EMERGENCY_FREEZE_UPDATE',
             targetType: 'SYSTEM',
             targetId: 'GLOBAL',
-            details: { frozen, reason, before, after },
+            details: { before, after, reason },
             ipAddress: ip,
             userAgent: ua,
-            severity: frozen ? 'CRITICAL' : 'INFO'
+            severity: 'CRITICAL'
         });
 
         // Write Rate History
