@@ -551,6 +551,48 @@ class AdminService {
             body: JSON.stringify({ filename }),
         });
     }
+
+    // Security Operations Center (SOC) Console API methods
+    async getDevices() {
+        return this.fetchJson('/api/admin/sessions/devices');
+    }
+
+    async updateDeviceState(data: { deviceId: string; userId: string; action: 'RENAME' | 'BLOCK' | 'UNBLOCK' | 'TRUST' | 'UNTRUST'; newName?: string }) {
+        return this.fetchJson('/api/admin/sessions/devices', {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async deleteDeviceRegistry(deviceId: string, userId: string) {
+        return this.fetchJson(`/api/admin/sessions/devices?deviceId=${deviceId}&userId=${userId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async updateSecurityAlert(alertId: string, data: { status: 'NEW' | 'INVESTIGATING' | 'RESOLVED' | 'ESCALATED'; resolutionNotes?: string }) {
+        return this.fetchJson('/api/admin/sessions/alerts', {
+            method: 'PUT',
+            body: JSON.stringify({ alertId, ...data })
+        });
+    }
+
+    async getSecurityAlerts(params: { severity?: string; status?: string; type?: string } = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/sessions/alerts?${query}`);
+    }
+
+    async triggerEmergencyAction(data: { action: 'LOCK_PLATFORM' | 'UNFREEZE_PLATFORM' | 'FREEZE_SUSPICIOUS_ACCOUNTS' | 'FORCE_PASSWORD_RESET' | 'DISABLE_NEW_LOGINS' | 'DISABLE_REGION'; targetUserId?: string; regionCode?: string }) {
+        return this.fetchJson('/api/admin/sessions/emergency', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    }
+
+    async getSecurityAuditLogs(params: { q?: string; severity?: string; type?: string; page?: number; limit?: number } = {}) {
+        const query = new URLSearchParams(params as any).toString();
+        return this.fetchJson(`/api/admin/sessions/audit?${query}`);
+    }
 }
 
 export const adminService = new AdminService();

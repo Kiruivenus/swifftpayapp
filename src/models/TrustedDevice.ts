@@ -20,6 +20,14 @@ const TrustedDeviceSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    isBlocked: {
+        type: Boolean,
+        default: false,
+    },
+    riskScore: {
+        type: Number,
+        default: 10,
+    },
     revokedAt: {
         type: Date,
         default: null,
